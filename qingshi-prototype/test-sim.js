@@ -1,0 +1,1260 @@
+/* 自动化剧本验证：用脚本化选择驱动引擎，断言各路线收束到正确结局。
+ * 运行：node test-sim.js
+ */
+const D = require('./game-data.js');
+const E = require('./engine.js');
+
+// 固定随机序列（修正事件的 30% 概率可预期）：全部返回 0.99 → 不触发概率修正
+const rngHigh = () => 0.99;
+// 全部返回 0.01 → 必然触发概率修正
+const rngLow = () => 0.01;
+
+// trace 条目：[事件id, 选项文本, 决策时偏离度]；hook(g) 每步回调，用于中间态构造/观测（如改 dev、检查章末事件锁定）
+function play(diffKey, script, rng, endScript, hook) {
+  const g = new E.Game(D, diffKey, rng || rngHigh);
+  g.randomOn = false; // 剧本路线断言需确定性，随机际遇单独测试
+  g.start();
+  let guard = 0;
+  const trace = [];
+  while (g.phase !== 'ending' && guard++ < 400) {
+    if (hook) hook(g);
+    if (g.phase === 'intro') { g.beginEvents(); continue; }
+    if (g.phase === 'round') {
+      const offer = g.getOffer();
+      const keyId = offer[0].eventId;
+      if (script[keyId] != null) { g.playCard(0); continue; } // 有指定：点关键卡，event 阶段照原逻辑按 script 选选项
+      // 无指定：点第一张未锁定、非险招且本章未用过的行动卡（都用过则第一张未锁定非险招；全锁兜底点关键卡）。
+      // 优先未用过的卡可避免确定性发牌下同一张卡连刷三次造成的属性漂移（如 ACT-18 才学-2×3 锁死后续 scripted 门槛），
+      // 同时覆盖更多卡面与递减计数；险招卡带掷骰随机，通用选择跳过以保路线确定性（险招语义由专门用例覆盖）。
+      let ai = -1;
+      for (let i = 1; i < offer.length; i++) if (!offer[i].locked && !offer[i].risky && offer[i].usedCount === 0) { ai = i; break; }
+      if (ai < 0) for (let i = 1; i < offer.length; i++) if (!offer[i].locked && !offer[i].risky) { ai = i; break; }
+      if (ai < 0) ai = 0;
+      const r = g.playCard(ai);
+      if (!r) { g.playCard(0); continue; }
+      if (r.kind === 'action' && r.forcedKey) {
+        // 倒计时归零：强制进入关键事件抉择页（玩家亲选）；事件选择由下一轮 event 分支按 script 处理
+        trace.push([keyId, '（倒计时归零·强制抉择）', g.dev]);
+      }
+      continue; // forcedEnding 时 phase='settle'，由 settle 分支 proceed 收束
+    }
+    if (g.phase === 'correction') { trace.push(['修正', g.correction.title, g.dev]); g.correctionContinue(); continue; }
+    if (g.phase === 'summary') { g._summaryCount = (g._summaryCount || 0) + 1; g.proceedSummary(); continue; }
+    if (g.phase === 'endEvent') {
+      const ev = g.currentEndEvent;
+      const idx = pickIndex(ev.options, script[ev.id] != null ? script[ev.id] : (endScript && endScript[ev.id]));
+      if (idx == null) throw new Error('章末事件 ' + ev.id + ' 没有可用选择（script 未指定或选项锁定）');
+      trace.push([ev.id, ev.options[idx].t, g.dev]);
+      g.endEventChoose(idx);
+      continue;
+    }
+    if (g.phase === 'event') {
+      const ev = g.findEvent(g.eventId);
+      const opts = g.getOptions();
+      let idx = pickIndex(ev.options, script[ev.id], opts);
+      if (idx == null) throw new Error('事件 ' + ev.id + ' 没有可用选择（script 未指定或全部锁定）');
+      trace.push([ev.id, ev.options[idx].t, g.dev]);
+      g.choose(idx);
+      continue;
+    }
+    if (g.phase === 'settle') { g.proceed(); continue; }
+    throw new Error('未知阶段 ' + g.phase);
+  }
+  if (g.phase !== 'ending') throw new Error('未能在限定步数内到达结局');
+  return { g, trace };
+}
+
+// 驱动到指定剧本事件（phase==='event' 且 eventId===stopId）停下，用于结算条目级断言。
+// picks：{ 事件id: 选项下标 }，缺省选第一个未锁定项；只适用于不遇章末事件/修正的路线
+function driveTo(stopId, picks) {
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false;
+  g.start();
+  let guard = 0;
+  while (guard++ < 200) {
+    if (g.phase === 'event' && g.eventId === stopId) return g;
+    if (g.phase === 'intro') { g.beginEvents(); continue; }
+    if (g.phase === 'round') { g.playCard(0); continue; } // 线性流：每回合直接点关键卡（stopId 于 event 阶段返回）
+    if (g.phase === 'summary') { g.proceedSummary(); continue; }
+    if (g.phase === 'event') {
+      const opts = g.getOptions();
+      let i = picks && picks[g.eventId];
+      if (i == null) { for (let k = 0; k < opts.length; k++) if (!opts[k].locked) { i = k; break; } }
+      if (i == null) throw new Error('事件 ' + g.eventId + ' 全部锁定');
+      g.choose(i);
+      continue;
+    }
+    if (g.phase === 'settle') { g.proceed(); continue; }
+    throw new Error('driveTo 遇意外阶段 ' + g.phase + '（' + g.eventId + '）');
+  }
+  throw new Error('driveTo 未能在限定步数内到达 ' + stopId);
+}
+
+function pickIndex(options, want, wrapped) {
+  if (want == null) {
+    // 默认选第一个未锁定
+    if (wrapped) { for (let i = 0; i < wrapped.length; i++) if (!wrapped[i].locked) return i; return null; }
+    return 0;
+  }
+  if (typeof want === 'number') return want;
+  // 按文本包含匹配
+  for (let i = 0; i < options.length; i++) {
+    const t = options[i].t || options[i].opt && options[i].opt.t;
+    if (t && t.indexOf(want) >= 0) {
+      if (wrapped && wrapped[i].locked) return null;
+      return i;
+    }
+  }
+  return null;
+}
+
+let pass = 0, fail = 0;
+function expect(name, actual, wantId, wantVariant) {
+  const ok = actual.id === wantId && (wantVariant === undefined || actual.variant === wantVariant);
+  if (ok) { pass++; console.log(`✔ ${name} → ${actual.id}${actual.variant ? '/' + actual.variant : ''}「${actual.name}」 总分 ${actual.total} 评级 ${actual.grade} 偏离 ${actual.dev}`); }
+  else { fail++; console.log(`✘ ${name} 期望 ${wantId}/${wantVariant || '-'}，实际 ${actual.id}/${actual.variant || '-'}「${actual.name}」`); }
+}
+
+/* ---------- 1. 史实线 → E1 东市之叹 ---------- */
+{
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '灭诸侯、成帝业', '2-3': '上书自辩', '2-4': '全力经略',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '缄默',
+    '5-1': '怒斥', '5-2': '从之。矫诏',
+    '6-1': '上督责书', '6-2': '照常入谏', '6-3': '狱中上书'
+  });
+  expect('史实线', g.ending, 'E1');
+  if (g.dev !== 0) { fail++; console.log('✘ 史实线偏离应为 0，实际 ' + g.dev); } else { pass++; }
+  if (g.ending.review.length !== 5) { fail++; console.log('✘ 复盘应为 5 条，实际 ' + g.ending.review.length); } else { pass++; }
+  if (g.ach.includes('dongmen') && g.ach.includes('shaqiu')) { pass++; console.log('✔ 结局成就解锁：东门黄犬、沙丘之夜'); }
+  else { fail++; console.log('✘ E1 线应解锁成就 dongmen/shaqiu，实际 ' + g.ach.join('、')); }
+  if (!g.ach.includes('shutongwen')) { pass++; console.log('✔ 声望 37<60，书同文成就未解锁（门槛生效）'); }
+  else { fail++; console.log('✘ 低声望线不应解锁书同文成就'); }
+  if (g._summaryCount === 6) { pass++; console.log('✔ 章末结算页经过 6 次'); }
+  else { fail++; console.log('✘ 章末结算页次数异常：' + g._summaryCount); }
+}
+
+/* ---------- 2. 苟活线 → E2 上蔡旧吏 ---------- */
+{
+  const { g } = play('normal', { '0-1': '嗟叹', '0-2': '忍了', '0-3': '罢了' });
+  expect('苟活线（留守）', g.ending, 'E2', 'jiuli');
+}
+
+/* ---------- 2b. 苟活线 → E2 兰陵归鼠（儒林） ---------- */
+{
+  const { g } = play('normal', { '0-2': '辞去吏职', '1-2': '留兰陵', '1-5': '继续著述' });
+  expect('苟活线（儒林）', g.ending, 'E2');
+}
+
+/* ---------- 3. 逐客线 → E3 东门逐客 ---------- */
+{
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '西入秦', '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '闭门谢客', '2-4': '只做离间',
+    '3-1': '认命出关'
+  });
+  expect('逐客线', g.ending, 'E3');
+}
+
+/* ---------- 4. 逆天线 → E6 扶苏新政 ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '连署', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程',
+    '5-1': '怒斥', '5-2': '反客为主'
+  });
+  expect('逆天线（扶苏）', g.ending, 'E6');
+  if (g.ach.includes('shuyumengtian')) { pass++; console.log('✔ 结局成就解锁：吾与他，孰与蒙恬'); }
+  else { fail++; console.log('✘ E6 线应解锁成就 shuyumengtian'); }
+  if (g.ach.includes('nitian')) { pass++; console.log('✔ 结局成就解锁：逆天改命'); }
+  else { fail++; console.log('✘ E6 线应解锁成就 nitian'); }
+  // 剧本事件全部脚本化时驱动器不打出行动卡（见 play() 回合分支），本路线数值确定：
+  // 章末权势恒 24≤30 且持知止，急流勇退必然触发——由提示转为正式断言
+  const tuiyinSeen = trace.some(t => t[0] === 'cj-tuiyin');
+  if (tuiyinSeen) { pass++; console.log('✔ 急流勇退事件按条件触发（权势≤30 且知止）'); }
+  else { fail++; console.log('✘ 急流勇退事件应触发而未触发（权势峰值=' + g.peak.quanshi + '）'); }
+}
+
+/* ---------- 5. 逆天线 → E7 权倾二世（6-2-C 密奏成功：quanshi≥70、junxin≥40、dev≥46） ---------- */
+{
+  // 原路线 6-2 时 dev 仅 33，不满足新门槛 devMin:46；兰陵一折（留兰陵+意难平，+11）抬偏离后收 E7
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '忍了', '0-3': '变卖家资',
+    '1-1': '潜心问学', '1-2': '留兰陵', '1-5': '终究还是意难平',
+    '2-1': '主动请办杂务', '2-2': '灭诸侯', '2-3': '上书自辩', '2-4': '全力经略',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '不叹', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '附议重罚',
+    '5-1': '怒斥', '5-2': '假意从之',
+    '6-1': '上督责书', '6-2': '密奏二世'
+  });
+  expect('逆天线（除赵高）', g.ending, 'E7');
+  if (g.dev >= 46) { pass++; console.log('✔ 密奏时偏离 ' + g.dev + ' ≥46，满足 6-2-C 通 E7 门槛'); }
+  else { fail++; console.log('✘ E7 线偏离应≥46，实际 ' + g.dev); }
+  if (g.ach.includes('nitian')) { pass++; console.log('✔ 结局成就解锁：逆天改命'); }
+  else { fail++; console.log('✘ E7 线应解锁成就 nitian'); }
+}
+
+/* ---------- 5b. 6-2-C 门槛回退：低偏离密奏失败落 6-3，6-4 按 dev≤45 收 E1 ---------- */
+{
+  // 原「逆天线（除赵高）」路线保留为回退断言：密奏时 dev 不足 46 → 落 6-3；
+  // 6-4 收束数组 dev≤45 → E1。同时覆盖 E1 门槛的 21–45 区间（dev=0 见史实线 #1，46–70→E5 见 #18，≥71→E7 见 #26）
+  const { g, trace } = play('normal', {
+    '0-1': '驻足细想', '0-2': '忍了', '0-3': '变卖家资',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '主动请办杂务', '2-2': '灭诸侯', '2-3': '上书自辩', '2-4': '全力经略',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '不叹', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '附议重罚',
+    '5-1': '怒斥', '5-2': '假意从之',
+    '6-1': '上督责书', '6-2': '密奏二世', '6-3': '狱中上书'
+  });
+  expect('低偏离密奏（门槛回退）', g.ending, 'E1');
+  if (g.dev >= 21 && g.dev <= 45 && trace.some(t => t[0] === '6-4')) { pass++; console.log('✔ 密奏失败落 6-3，经 6-4 收束（偏离 ' + g.dev + ' 在 21–45 区间）'); }
+  else { fail++; console.log('✘ 回退路线异常：dev=' + g.dev + '，经 6-4=' + trace.some(t => t[0] === '6-4')); }
+}
+
+/* ---------- 6. 稳健线 → E5 沙丘孤忠 ---------- */
+{
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '西入秦',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '上书自辩', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '纵韩非归韩', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    '5-1': '怒斥', '5-2': '拒之。宁死'
+  });
+  expect('稳健线（孤忠）', g.ending, 'E5');
+}
+
+/* ---------- 7. 稳健线 → E4 上蔡东门（急流勇退） ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '西入秦',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '闭门谢客', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '缄默',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '上表辞官'
+  });
+  expect('稳健线（身退）', g.ending, 'E4');
+  if (!trace.some(t => t[0] === 'cj-tuiyin')) { fail++; console.log('✘ 急流勇退事件未触发'); } else { pass++; }
+}
+
+/* ---------- 8. 失败线 → E8 狱中死（直斥秦王） ---------- */
+{
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '西入秦',
+    '2-1': '埋头著文', '2-2': '先谈富国强兵', '2-3': '闭门谢客', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '直斥秦王'
+  });
+  expect('失败线（直斥）', g.ending, 'E8');
+}
+
+/* ---------- 9. 苟活变体 → E4/会稽老丈 ---------- */
+{
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '西入秦',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '上书自辩', '2-4': '中饱私囊',
+    '3-1': '藏匿咸阳', '3-2': '上书——',
+    '4-1': '不叹', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '缄默',
+    '5-1': '怒斥', '5-2': '从之。矫诏',
+    '6-1': '称病不朝', '6-2': '察觉有诈', '6-3': '散尽家财'
+  });
+  expect('苟活变体（会稽）', g.ending, 'E4', 'kuaiji');
+  if (g.ach.includes('jinchan')) { pass++; console.log('✔ 结局成就解锁：金蝉脱壳'); }
+  else { fail++; console.log('✘ E4/kuaiji 线应解锁成就 jinchan'); }
+}
+
+/* ---------- 10. 修正事件触发验证（高偏离 + 必中随机） ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '留兰陵', '1-5': '终究还是意难平',
+    '2-1': '广交三晋', '2-2': '直言吕不韦', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '不叹', '4-2': '举荐韩非', '4-3': '附和王绾', '4-4': '委之属吏', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保',
+    '5-1': '怒斥', '5-2': '拒之。宁死'
+  }, rngLow);
+  const corr = trace.filter(t => t[0] === '修正').length;
+  if (corr > 0) { pass++; console.log(`✔ 修正事件触发 ${corr} 次（高偏离线）`); }
+  else { fail++; console.log('✘ 高偏离线未触发任何修正事件'); }
+  expect('高偏离收束', g.ending, 'E5');
+}
+
+/* ---------- 11. 回溯机制（普通难度每章 1 次）；回合制状态（actionUses/keyRoundsLeft）随快照恢复 ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  g.beginEvents();
+  // 先出一张行动卡：计入本章递减计数，关键卡倒计时 -1
+  const offer = g.getOffer();
+  let ai = -1;
+  for (let i = 1; i < offer.length; i++) if (!offer[i].locked) { ai = i; break; }
+  const usedId = offer[ai].action.id;
+  g.playCard(ai);
+  if (g.actionUses[usedId] === 1 && g.keyRoundsLeft === E.KEY_CARD_ROUNDS - 1) { pass++; console.log('✔ 行动卡计入递减计数，关键卡倒计时 ' + E.KEY_CARD_ROUNDS + '→' + g.keyRoundsLeft); }
+  else { fail++; console.log('✘ 行动卡计数异常：' + JSON.stringify(g.actionUses) + ' 倒计时 ' + g.keyRoundsLeft); }
+  g.playCard(0); // 关键卡 → 0-1
+  g.choose(1); g.proceed(); // 0-1 观鼠悟道（成就 cangshu）→ 0-2
+  if (g.ach.includes('cangshu')) { pass++; } else { fail++; console.log('✘ 观鼠悟道应解锁成就'); }
+  if (!g.canBacktrack()) { fail++; console.log('✘ 章内应可回溯'); }
+  else {
+    const ok = g.backtrack();
+    if (ok && g.eventId === '0-1' && g.backtracksThisChapter === 1) { pass++; console.log('✔ 回溯返回章首，次数扣减正确'); }
+    else { fail++; console.log('✘ 回溯状态异常'); }
+    if (Object.keys(g.actionUses).length === 0 && g.keyRoundsLeft === E.KEY_CARD_ROUNDS) { pass++; console.log('✔ 回溯后递减计数与倒计时回到章首快照（actionUses 清空、倒计时回满）'); }
+    else { fail++; console.log('✘ 回溯后回合制状态未随快照恢复：' + JSON.stringify(g.actionUses) + ' 倒计时 ' + g.keyRoundsLeft); }
+    if (g.canBacktrack()) { fail++; console.log('✘ 普通难度本章不应再有回溯次数'); } else { pass++; }
+    if (g.ach.includes('cangshu')) { pass++; console.log('✔ 回溯后已解锁成就不重置（GDD 6.4）'); }
+    else { fail++; console.log('✘ 回溯后成就被重置'); }
+  }
+}
+
+/* ---------- 12. 硬核难度危机增速 ×1.2 且属性以状态词显示 ---------- */
+{
+  const g = new E.Game(D, 'hardcore', rngHigh);
+  g.start(); g.beginEvents();
+  g.playCard(0); // 关键卡 → 0-1
+  const r = g.choose(2); // 捉仓鼠：危机+3 → ×1.2 ≈ 4
+  const wj = r.changes.find(c => c.k === 'weiji');
+  if (wj && wj.delta === 4) { pass++; console.log('✔ 硬核危机 ×1.2（+3→+4）'); }
+  else { fail++; console.log('✘ 硬核危机倍率异常：' + (wj && wj.delta)); }
+  // 状态词按档位实质映射（硬核隐藏数值，仅显状态词，GDD 4.4）
+  g.attrs.caixue = 80;
+  const w80 = g.attrWord('caixue');
+  g.attrs.caixue = 40;
+  const w40 = g.attrWord('caixue');
+  if (w80 === '学究天人' && w40 === '腹有诗书') { pass++; console.log('✔ 硬核状态词按档位映射（80→学究天人 / 40→腹有诗书）'); }
+  else { fail++; console.log('✘ attrWord 档位映射异常：' + w80 + '/' + w40); }
+}
+
+/* ---------- 13. 害韩非锁死逆天线 E6 ---------- */
+{
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    '5-1': '怒斥', '5-2': '拒之。宁死'   // 5-2C「反客为主」应被锁定，改选拒之 → 有 fusu → E5
+  });
+  // 直接检查：重放至 5-2（持污名·害韩非 + 扶苏信任），验证 C 选项的锁定态与原因
+  const g13 = driveTo('5-2', { '3-1': 1, '4-6': 1 });
+  const opts52 = g13.getOptions();
+  const c52 = opts52.find(o => o.opt.t.indexOf('反客为主') >= 0);
+  if (c52 && c52.locked && !opts52[1].locked) { pass++; console.log('✔ 5-2-C 在【污名·害韩非】下直接锁定（原因：' + (c52.reason || '无') + '）'); }
+  else { fail++; console.log('✘ 5-2-C 锁定态异常：locked=' + (c52 && c52.locked)); }
+  expect('污名锁死逆天（收束 E5）', g.ending, 'E5');
+}
+
+/* ---------- 14. 随机际遇触发与返回（round 阶段口径：RETURN 后回 round（resumed）且倒计时回满） ---------- */
+{
+  const g = new E.Game(D, 'normal', () => 0.01); // 必触发际遇
+  g.start(); g.beginEvents();
+  g.playCard(0); // 关键卡 → 0-1
+  g.choose(0); g.proceed(); // 0-1 → 0-2（回 round）
+  if (g.phase === 'round' && g.eventId === '0-2') { pass++; } else { fail++; console.log('✘ 事件结算后未回到回合：' + g.phase); }
+  // 先出一张行动卡消耗倒计时（3→2），再插际遇
+  const offer = g.getOffer();
+  let ai = -1;
+  for (let i = 1; i < offer.length; i++) if (!offer[i].locked) { ai = i; break; }
+  g.playCard(ai);
+  if (g.keyRoundsLeft === E.KEY_CARD_ROUNDS - 1) { pass++; } else { fail++; console.log('✘ 行动卡未消耗倒计时：' + g.keyRoundsLeft); }
+  const ev = g.maybeRandom();
+  if (ev && ev.id.indexOf('R-') === 0 && g.eventId === ev.id && g.phase === 'event') { pass++; console.log('✔ 际遇触发：' + ev.id + '「' + ev.title + '」'); }
+  else { fail++; console.log('✘ 际遇未触发'); }
+  if (ev) {
+    const before = g.pendingEventId;
+    g.choose(0); const n = g.proceed();
+    if (g.eventId === before && g.phase === 'round' && n.resumed === true && !g.currentRandom) { pass++; console.log('✔ 际遇结算后 RETURN 剧本事件 ' + before + '（round/resumed）'); }
+    else { fail++; console.log('✘ 际遇返回异常：' + g.eventId + ' phase=' + g.phase); }
+    // 际遇不消耗决策点：倒计时回满
+    if (g.keyRoundsLeft === E.KEY_CARD_ROUNDS) { pass++; console.log('✔ 际遇 RETURN 后关键卡倒计时回满'); }
+    else { fail++; console.log('✘ 际遇 RETURN 后倒计时未回满：' + g.keyRoundsLeft); }
+    // 返回后不应立刻再触发
+    if (g.maybeRandom() === null) { pass++; } else { fail++; console.log('✘ 返回后重复触发际遇'); }
+  }
+}
+
+/* ---------- 15. 际遇次数上限 ---------- */
+{
+  const g = new E.Game(D, 'normal', () => 0.01);
+  g.start(); g.beginEvents();
+  g.randomCount = 2;
+  if (g.maybeRandom() === null) { pass++; console.log('✔ 际遇每章上限生效'); } else { fail++; console.log('✘ 际遇上限失效'); }
+}
+
+/* ---------- 16. 行动卡：生效、收益递减（同章连用减半、代价不减）、getOffer 透出 usedCount/diminishing ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  // getOffer 透出：初始 usedCount 0、diminishing false；req 锁定（入宫请安在序章锁定）——
+  // 注：req 不满足的行动不进发牌池，故锁定情形以 check(req) 直接验证
+  const offer = g.getOffer();
+  const allFresh = offer.slice(1).every(o => o.type === 'action' && o.usedCount === 0 && o.diminishing === false);
+  if (allFresh) { pass++; console.log('✔ getOffer 透出 usedCount/diminishing（初始 0/false）'); }
+  else { fail++; console.log('✘ getOffer 透出异常：' + JSON.stringify(offer.slice(1).map(o => [o.action && o.action.id, o.usedCount, o.diminishing]))); }
+  if (!g.check({ minChapter: 2 }).ok) { pass++; console.log('✔ 入宫请安（req minChapter:2）在序章不可用'); }
+  else { fail++; console.log('✘ 入宫请安在序章应锁定'); }
+  // 收益递减：stub 发牌强制同一张 ACT-1（才学+4/声望+2/危机+2）连用两次
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }];
+  const r1 = g.playCard(1);
+  const d1cx = r1.changes.find(c => c.k === 'caixue'), d1sw = r1.changes.find(c => c.k === 'shengwang'), d1wj = r1.changes.find(c => c.k === 'weiji');
+  if (r1.useCount === 1 && d1cx.delta === 4 && d1sw.delta === 2 && d1wj.delta === 2) { pass++; console.log('✔ 行动结算生效（第 1 次全额：才学+4 声望+2 危机+2）'); }
+  else { fail++; console.log('✘ 行动结算异常：' + JSON.stringify(r1.changes)); }
+  // 第二次前 getOffer 透出 usedCount 1 / diminishing true
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }];
+  const o2 = g.getOffer()[1];
+  if (o2.usedCount === 1 && o2.diminishing === true) { pass++; console.log('✔ 连用后 getOffer 透出 usedCount=1、diminishing=true'); }
+  else { fail++; console.log('✘ 递减透出异常：usedCount=' + o2.usedCount); }
+  const r2 = g.playCard(1);
+  const d2cx = r2.changes.find(c => c.k === 'caixue'), d2sw = r2.changes.find(c => c.k === 'shengwang'), d2wj = r2.changes.find(c => c.k === 'weiji');
+  if (r2.useCount === 2 && d2cx.delta === 2 && d2sw.delta === 1 && d2wj.delta === 2) { pass++; console.log('✔ 第 2 次收益减半（才学+4→+2、声望+2→+1），代价危机+2 不变'); }
+  else { fail++; console.log('✘ 递减规则异常：' + JSON.stringify(r2.changes)); }
+  // 行动不干扰事件流：关键事件仍是 0-1，回合并发新牌
+  if (g.phase === 'round' && g.eventId === '0-1') { pass++; } else { fail++; console.log('✘ 行动后事件流被打断：' + g.phase + ' ' + g.eventId); }
+}
+
+/* ---------- 17. 赵高威胁度 ≥50：5-2 拒绝被拖入死线（GDD 4.3 / 5-2-B） ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '主动请办杂务', '2-2': '灭诸侯', '2-3': '上书自辩', '2-4': '全力经略',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '不叹', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '缄默',
+    '5-1': '当场密令宿卫', '5-2': '拒之。宁死', '5-3': '死拒'
+  });
+  expect('赵高威胁≥50 死线', g.ending, 'E8', 'baobing');
+  if (trace.some(t => t[0] === '5-3')) { pass++; console.log('✔ 威胁≥50 时拒绝被拖入 5-3 死线'); }
+  else { fail++; console.log('✘ 威胁≥50 时应进入 5-3'); }
+}
+
+/* ---------- 18. N2 异变：君心≤30 触发前置事件「御前发难」 ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '先谈富国强兵', '2-3': '闭门谢客', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '纵韩非归韩', '4-3': '附和王绾', '4-4': '委之属吏',
+    '4-5-pre': '周仆射面谀', '4-5': '官藏代焚', '4-6': '缄默',
+    'cj-tuiyin': '再留一程',
+    '5-1': '怒斥', '5-2': '从之。矫诏',
+    '6-1': '上督责书', '6-2': '照常入谏', '6-3': '狱中上书'
+  });
+  // 该线收束时 dev=46>45：6-4 收束数组 dev≤45→E1 不再适用，按 46–70 档回退记为 E5（GDD 9.1 高偏离回退）
+  expect('N2 周仆射之问', g.ending, 'E5');
+  if (trace.some(t => t[0] === '4-5-pre')) { pass++; console.log('✔ 君心≤30 触发 N2 前置异变「御前发难」'); }
+  else { fail++; console.log('✘ 未触发 4-5-pre'); }
+}
+
+/* ---------- 19. 书同文成就：声望≥60 解锁 ---------- */
+{
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '1-1': '多与同窗交游', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '灭诸侯', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程',
+    '5-1': '怒斥', '5-2': '拒之。宁死'
+  });
+  expect('书同文高声望线', g.ending, 'E5');
+  if (g.ach.includes('shutongwen')) { pass++; console.log('✔ 声望≥60 解锁成就：书同文'); }
+  else { fail++; console.log('✘ 高声望线应解锁书同文'); }
+}
+
+/* ---------- 20. 偏离≥46 解锁特殊选项：密遣心腹北联蒙恬（GDD 5.2 正向收益） ---------- */
+{
+  const { g, trace } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '留兰陵', '1-5': '终究还是意难平',
+    '2-1': '埋头著文', '2-2': '直言吕不韦', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程',
+    '5-1': '密遣心腹', '5-2': '拒之。宁死'
+  });
+  expect('密遣心腹（偏离≥46）', g.ending, 'E5');
+  if (trace.some(t => t[0] === '5-1' && t[1].indexOf('密遣心腹') >= 0)) { pass++; console.log('✔ 偏离≥46 解锁特殊选项：密遣心腹，北联蒙恬'); }
+  else { fail++; console.log('✘ 密遣选项未出现或被锁定'); }
+}
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  g.dev = 45; const locked = !g.check({ devMin: 46 }).ok;
+  g.dev = 46; const open = g.check({ devMin: 46 }).ok;
+  if (locked && open) { pass++; console.log('✔ devMin 门槛边界（45 锁 / 46 开）'); }
+  else { fail++; console.log('✘ devMin 门槛边界异常'); }
+}
+
+/* ---------- 21. 逆天段（偏离≥71）章中随机反噬（GDD 5.2） ---------- */
+{
+  const g = new E.Game(D, 'normal', () => 0.01);
+  g.start(); g.beginEvents();
+  g.dev = 75;
+  const ev = g.maybeRandom();
+  if (ev && ev.id === 'BACKLASH') { pass++; console.log('✔ 逆天段章中反噬触发：' + ev.title); }
+  else { fail++; console.log('✘ 逆天段反噬未触发'); }
+  if (ev) {
+    const before = g.pendingEventId;
+    const w0 = g.attrs.weiji;
+    g.choose(0); g.proceed();
+    if (g.eventId === before && g.phase === 'round' && g.attrs.weiji > w0) { pass++; console.log('✔ 反噬结算生效并返回剧本事件（round）'); }
+    else { fail++; console.log('✘ 反噬返回异常：' + g.eventId + ' phase=' + g.phase); }
+    if (g.maybeRandom() === null) { pass++; } else { fail++; console.log('✘ 反噬后不应立刻再触发'); }
+  }
+}
+
+/* ---------- 22. GDD 4.1 章首持续结算（树大招风 / 失宠 / 门客散去） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  g.attrs.quanshi = 82;
+  const w0 = g.attrs.weiji;
+  g.enterChapter(1);
+  if (g.attrs.weiji === w0 + 5 && g.introNotes.some(n => n.indexOf('树大招风') >= 0)) { pass++; console.log('✔ 权势≥80：章首猜忌 危机+5'); }
+  else { fail++; console.log('✘ 章首持续结算异常 weiji ' + w0 + '→' + g.attrs.weiji); }
+  g.attrs.junxin = 10; g.attrs.caifu = 0;
+  const w1 = g.attrs.weiji, s1 = g.attrs.shengwang;
+  g.enterChapter(2);
+  if (g.attrs.weiji === w1 + 15 && g.attrs.shengwang === s1 - 5) { pass++; console.log('✔ 失宠+10 / 门客散去-5 章首生效'); }
+  else { fail++; console.log('✘ 章首持续结算异常（二章）weiji ' + w1 + '→' + g.attrs.weiji + ' shengwang ' + s1 + '→' + g.attrs.shengwang); }
+}
+
+/* ---------- 23. N1 异变：君心≥45 触发 3-0 密报之夜，连夜起草减上书门槛 ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start();
+  g.attrs.junxin = 50; // 倾力经营君心后的状态（史实线为 41，需另加一次入宫请安）
+  g.enterChapter(3);
+  if (g.eventId === '3-0' && g.flags.mibao && g.introNotes.some(n => n.indexOf('密告') >= 0)) { pass++; console.log('✔ 君心≥45 触发 N1 异变：3-0 密报之夜'); }
+  else { fail++; console.log('✘ 3-0 未触发，起始事件 ' + g.eventId); }
+  g.beginEvents();
+  g.playCard(0); // 关键卡 → 3-0
+  g.choose(0); g.proceed(); // 连夜起草 → 3-1
+  if (g.flags.liancao && g.eventId === '3-1') { pass++; console.log('✔ 连夜起草完成，进入 3-1'); }
+  else { fail++; console.log('✘ 3-0 选项流向异常：' + g.eventId); }
+  g.attrs.caixue = 45;
+  g.playCard(0); // 关键卡 → 3-1
+  g.choose(1); g.proceed(); // 拖延时日 → 3-2
+  g.playCard(0); // 关键卡 → 3-2
+  const opts = g.getOptions();
+  const shangshu = opts.find(o => o.opt.hist);
+  if (shangshu && !shangshu.locked) { pass++; console.log('✔ 连夜起草使上书门槛 -10（才学 45 可上书）'); }
+  else { fail++; console.log('✘ 上书门槛减免未生效'); }
+}
+
+/* ---------- 24. N1 异变：声望≥50 触发「籍没其家」 ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start();
+  g.attrs.shengwang = 55; g.attrs.caifu = 30;
+  g.enterChapter(3);
+  if (g.flags.jimo && g.attrs.caifu === 5 && g.introNotes.some(n => n.indexOf('籍没其家') >= 0)) { pass++; console.log('✔ 声望≥50 触发 N1 异变：逐客且籍没其家'); }
+  else { fail++; console.log('✘ jimo 异变未触发'); }
+}
+
+/* ---------- 25. 偏离度只增不减：多条路线 trace 的 dev 序列无下降（GDD 4.2；cj-yaojia-B 已无 dev:-5） ---------- */
+{
+  const cases = [
+    ['史实线', { '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠', '3-1': '拖延时日', '3-2': '上书——', '6-2': '照常入谏', '6-3': '狱中上书' }],
+    ['逆天扶苏线', { '0-1': '驻足细想', '0-2': '辞去吏职', '2-3': '为吕不韦收尸', '2-4': '只做离间', '3-1': '拖延时日', '3-2': '上书——', '4-2': '举荐韩非', '4-5': '连署', '4-6': '为扶苏缓颊', 'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程', '5-2': '反客为主' }],
+    ['修正线（必中随机）', { '0-2': '辞去吏职', '1-2': '留兰陵', '1-5': '终究还是意难平', '2-2': '直言吕不韦', '2-3': '为吕不韦收尸', '2-4': '只做离间', '3-1': '拖延时日', '3-2': '上书——', '4-1': '不叹', '4-2': '举荐韩非', '4-3': '附和王绾', '4-4': '委之属吏', '4-5': '官藏代焚', '4-6': '为扶苏缓颊', 'cj-yaojia': '挺身力保', '5-2': '拒之。宁死' }, rngLow]
+  ];
+  cases.forEach(function (c) {
+    const r = play('normal', c[1], c[2] || rngHigh);
+    let ok = true;
+    for (let i = 1; i < r.trace.length; i++) if (r.trace[i][2] < r.trace[i - 1][2]) { ok = false; break; }
+    if (ok) { pass++; console.log('✔ 偏离单调不减：' + c[0] + '（' + r.trace.length + ' 个决策点，终偏离 ' + r.g.dev + '）'); }
+    else { fail++; console.log('✘ ' + c[0] + ' dev 序列出现下降'); }
+  });
+}
+
+/* ---------- 26. 6-4 东市收束：dev≥71 落 E7（hook 构造中间态；46–70→E5 见 #18，≤45→E1 见 #1/#5b） ---------- */
+{
+  let raised = false;
+  const { g, trace } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '5-1': '怒斥', '5-2': '从之。矫诏',
+    '6-1': '上督责书', '6-2': '照常入谏', '6-3': '狱中上书'
+  }, rngHigh, null, function (g) {
+    // 回合制：6-4 未入 script，关键卡停留 round 阶段即构造 dev（随后的行动卡不改 dev）
+    if (!raised && g.eventId === '6-4' && (g.phase === 'event' || g.phase === 'round')) { g.dev = 75; raised = true; }
+  });
+  if (raised && trace.some(t => t[0] === '6-4')) { pass++; console.log('✔ 到达 6-4 并构造 dev=75（逆天档）'); }
+  else { fail++; console.log('✘ 未到达 6-4'); }
+  expect('6-4 逆天偏离收束', g.ending, 'E7');
+}
+
+/* ---------- 27. cj-tuiyin 急流勇退：dev>45 时「上表辞官」锁定（req devMax:45；对照解锁见 #7） ---------- */
+{
+  let lockInfo = null;
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '1-2': '留兰陵', '1-5': '终究还是意难平',
+    '2-1': '埋头著文', '2-2': '直言吕不韦', '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '附和王绾', '4-4': '委之属吏', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程',
+    '5-1': '怒斥', '5-2': '拒之。宁死'
+  }, rngHigh, null, function (g) {
+    if (!lockInfo && g.phase === 'endEvent' && g.currentEndEvent && g.currentEndEvent.id === 'cj-tuiyin') {
+      const c = g.check(g.currentEndEvent.options[0].req); // 上表辞官 req: { devMax: 45 }
+      lockInfo = { dev: g.dev, ok: c.ok, reason: c.reason };
+    }
+  });
+  if (lockInfo && lockInfo.dev > 45 && !lockInfo.ok) { pass++; console.log('✔ 急流勇退在偏离 ' + lockInfo.dev + '>45 时锁定（' + lockInfo.reason + '），改选再留一程'); }
+  else { fail++; console.log('✘ 急流勇退锁定验证异常：' + JSON.stringify(lockInfo)); }
+  expect('高偏离婉拒身退收束', g.ending, 'E5');
+}
+
+/* ---------- 28. 危机 70–89：章内保底注入构陷际遇（不走概率、不占 randomCount 配额，GDD 4.1） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh); // rng 恒 0.99：概率际遇本不触发，注入必来自保底
+  g.start();
+  g.attrs.weiji = 75;
+  g.enterChapter(1);
+  g.beginEvents();
+  const ev = g.maybeRandom();
+  const isPlot = ev && (D.CRISIS_EVENTS.plots || []).some(p => p.id === ev.id);
+  if (isPlot && g.randomCount === 0 && !g._crisisPlotPending) { pass++; console.log('✔ 危机 75 保底注入：' + ev.id + '「' + ev.title + '」，不占 randomCount'); }
+  else { fail++; console.log('✘ 危机保底注入异常：' + (ev && ev.id)); }
+  if (g.maybeRandom() === null) { pass++; console.log('✔ 保底注入每章一次（二次调用不重复）'); }
+  else { fail++; console.log('✘ 保底注入重复触发'); }
+  if (ev) {
+    g.choose(0); g.proceed();
+    if (g.eventId === '1-1' && g.phase === 'round' && !g.currentRandom) { pass++; console.log('✔ 构陷际遇结算后 RETURN 原剧本事件 1-1（round）'); }
+    else { fail++; console.log('✘ 构陷际遇返回异常：' + g.eventId + ' phase=' + g.phase); }
+  }
+}
+
+/* ---------- 29. 危机 ≥90：章首替换为死亡判定事件（RETURN 返回原起始事件，GDD 4.1） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  g.attrs.weiji = 95; g.attrs.caifu = 50;
+  g.enterChapter(1);
+  if (g.eventId === 'C-DEATH' && g.pendingEventId === '1-1' && g.currentRandom) { pass++; console.log('✔ 危机 95：章首替换为死亡判定事件 C-DEATH'); }
+  else { fail++; console.log('✘ 死亡判定章首替换异常：' + g.eventId); }
+  g.beginEvents();
+  if (g.getOffer()[0].inserted === true) { pass++; console.log('✔ 危机插入事件作为关键卡透出 inserted=true'); }
+  else { fail++; console.log('✘ 关键卡未透出 inserted'); }
+  g.playCard(0); // 关键卡 → C-DEATH
+  const i = g.getOptions().findIndex(o => o.opt.t.indexOf('散尽家财') >= 0);
+  const r = g.choose(i); // 财富够：危机 -25 → 70
+  g.proceed();
+  if (!r.forcedEnding && g.attrs.weiji === 70 && g.eventId === '1-1' && g.phase === 'round') { pass++; console.log('✔ 散尽家财：危机 95→70，RETURN 原起始事件（round）'); }
+  else { fail++; console.log('✘ 散尽家财结算异常：weiji=' + g.attrs.weiji + ' eventId=' + g.eventId + ' phase=' + g.phase); }
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.start(); g2.attrs.weiji = 95; g2.enterChapter(1); g2.beginEvents();
+  g2.playCard(0); // 关键卡 → C-DEATH
+  const j = g2.getOptions().findIndex(o => o.opt.t.indexOf('坐以待毙') >= 0);
+  const r2 = g2.choose(j); // 危机 +15 → 100 → 致死
+  g2.proceed();
+  if (r2.forcedEnding && g2.ending && g2.ending.id === 'E8' && g2.ending.variant === 'cike') { pass++; console.log('✔ 坐以待毙致死 → E8/cike（zg<70）'); }
+  else { fail++; console.log('✘ 坐以待毙致死异常：' + (g2.ending && g2.ending.id)); }
+}
+
+/* ---------- 30. 章末事件结算致死：weiji 推过 100 → forcedEnding 强制收束（GDD 4.1） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  g.enterChapter(4);
+  g.flags.hanfeicun = true;  // 使章末事件 cj-yaojia 入队
+  g.attrs.weiji = 95;        // 在章首危机判定之后抬高，避免触发章首替换
+  g.beginEvents();
+  g.chapterEnd();
+  if (g.phase === 'endEvent' && g.currentEndEvent && g.currentEndEvent.id === 'cj-yaojia') { pass++; }
+  else { fail++; console.log('✘ 章末事件未就绪：' + g.phase); }
+  const r = g.endEventChoose(0); // 挺身力保：危机 +10 → 100
+  g.proceed();
+  if (r.forcedEnding && g.ending && g.ending.id === 'E8') { pass++; console.log('✔ 章末事件结算致死，强制收束 E8/' + g.ending.variant); }
+  else { fail++; console.log('✘ 章末事件致死判定异常'); }
+}
+
+/* ---------- 31. 行动卡结算致死：weiji 推过 100 → forcedEnding，补 proceed 收束（GDD 4.1） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  g.attrs.weiji = 99;
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }]; // stub 发牌锁定 ACT-1
+  const r = g.playCard(1); // 著书立说：危机 +2 → 100
+  if (r && r.kind === 'action' && r.forcedEnding === true) { pass++; console.log('✔ 行动卡结算把危机推过 100，forcedEnding 置位'); }
+  else { fail++; console.log('✘ 行动卡致死判定异常'); }
+  g.proceed(); // forcedEnding 需再调 proceed 收束
+  if (g.ending && g.ending.id === 'E8') { pass++; console.log('✔ 行动卡致死经 proceed 收束 E8/' + g.ending.variant); }
+  else { fail++; console.log('✘ 行动卡致死未收束'); }
+}
+
+/* ---------- 32. checkDeath 变体：zg≥70 族诛（zuzhu），否则刺杀（cike） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start(); g.attrs.weiji = 100; g.zg = 70;
+  const d1 = g.checkDeath();
+  if (d1 && d1.ending === 'E8' && d1.variant === 'zuzhu') { pass++; console.log('✔ zg=70 致死 → E8/zuzhu 族诛之祸'); }
+  else { fail++; console.log('✘ zuzhu 变体异常'); }
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.start(); g2.attrs.weiji = 100; g2.zg = 69;
+  const d2 = g2.checkDeath();
+  if (d2 && d2.ending === 'E8' && d2.variant === 'cike') { pass++; console.log('✔ zg=69 致死 → E8/cike 刺客之夜'); }
+  else { fail++; console.log('✘ cike 变体异常'); }
+}
+
+/* ---------- 33. 死 Flag 兑现：zhitin → 2-2-A condAttrs 才学+3（GDD 8 章 2-2-A 设计备注） ---------- */
+{
+  const g1 = driveTo('2-2', { '0-1': 1, '0-2': 1, '1-3': 0 }); // 细察秦国民情 → zhitin
+  const r1 = g1.choose(0); // 灭诸侯、成帝业
+  const hit1 = r1.changes.find(c => c.k === 'caixue' && c.delta === 3 && c.note);
+  if (g1.flags.zhitin && hit1) { pass++; console.log('✔ 持【知秦】走 2-2-A：结算含 condAttrs 才学+3（' + hit1.note + '）'); }
+  else { fail++; console.log('✘ zhitin 兑现异常：' + JSON.stringify(r1.changes)); }
+  const g0 = driveTo('2-2', { '0-1': 1, '0-2': 1, '1-3': 1 }); // 直趋咸阳 → 无 zhitin
+  const r0 = g0.choose(0);
+  if (!g0.flags.zhitin && !r0.changes.some(c => c.k === 'caixue' && c.note)) { pass++; console.log('✔ 对照：无 flag 路线 2-2-A 无此增益'); }
+  else { fail++; console.log('✘ zhitin 对照路线异常'); }
+}
+
+/* ---------- 34. 死 Flag 兑现：wangzhiwo → 2-4 condAttrs 权势+10（GDD 8 章 2-2-C 设计备注） ---------- */
+{
+  const g = driveTo('2-2', {}); // 默认首选：才学 68≥55，直言吕不韦可用
+  const opts = g.getOptions();
+  if (!opts[2].locked) { pass++; } else { fail++; console.log('✘ 2-2-C 直言吕不韦不应锁定（才学 ' + g.attrs.caixue + '）'); }
+  g.choose(2); g.proceed();  // 直言吕不韦 → wangzhiwo → 2-3（回 round）
+  if (g.flags.wangzhiwo) { pass++; } else { fail++; console.log('✘ wangzhiwo flag 未置位'); }
+  g.playCard(0); g.choose(0); g.proceed();  // 2-3 上书自辩 → 2-4
+  g.playCard(0); // 关键卡 → 2-4
+  const r = g.choose(0);     // 2-4 全力经略（三选项均挂同一份 condAttrs）
+  const hit = r.changes.find(c => c.k === 'quanshi' && c.delta === 10 && c.note);
+  if (hit) { pass++; console.log('✔ 持【王知我】到 2-4：结算含 condAttrs 权势+10（' + hit.note + '）'); }
+  else { fail++; console.log('✘ wangzhiwo 兑现异常：' + JSON.stringify(r.changes)); }
+}
+
+/* ---------- 35. 死 Flag 兑现：tanmo → 硬核难度第四/五章章首插入清算 C-QS（一次性，GDD 8 章 2-4-C 设计备注） ---------- */
+{
+  const g = new E.Game(D, 'hardcore', rngHigh);
+  g.start();
+  g.flags.tanmo = true;
+  g.enterChapter(4);
+  if (g.eventId === 'C-QS' && g.flags._tanmo_qs && g.pendingEventId === '4-1') { pass++; console.log('✔ 硬核+贪墨：第四章章首插入清算事件 C-QS「旧事清算」'); }
+  else { fail++; console.log('✘ C-QS 未插入：' + g.eventId); }
+  g.beginEvents();
+  g.playCard(0); // 关键卡 → C-QS
+  g.choose(0); g.proceed(); // 破财消灾 → RETURN
+  if (g.eventId === '4-1' && g.phase === 'round' && !g.currentRandom) { pass++; console.log('✔ C-QS 结算后 RETURN 章起始事件 4-1（round）'); }
+  else { fail++; console.log('✘ C-QS 返回异常：' + g.eventId + ' phase=' + g.phase); }
+  g.enterChapter(5);
+  if (g.eventId === '5-1' && !g.currentRandom) { pass++; console.log('✔ C-QS 一次性：第五章章首不再插入'); }
+  else { fail++; console.log('✘ C-QS 重复插入：' + g.eventId); }
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.start(); g2.flags.tanmo = true; g2.enterChapter(4);
+  if (g2.eventId === '4-1' && !g2.currentRandom) { pass++; console.log('✔ 普通难度不插入清算'); }
+  else { fail++; console.log('✘ 普通难度插入异常：' + g2.eventId); }
+}
+
+/* ---------- 36. 死 Flag 兑现：xiangchou/zhizhi → E4 史传尾声叠加；hanfeicun → 史评+10 且 hanfeiAlive ---------- */
+{
+  const { g } = play('normal', {
+    '0-2': '辞去吏职', '0-4': '儿会回来的',   // xiangchou
+    '2-3': '闭门谢客', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '缄默', // zhizhi
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '上表辞官'
+  });
+  expect('乡愁+知止身退线', g.ending, 'E4');
+  const zhuan = g.ending.zhuan;
+  if (zhuan.indexOf('诺虽迟') >= 0 && zhuan.indexOf('知止不殆') >= 0) { pass++; console.log('✔ E4 史传追加乡愁/知止两段尾声（可叠加）'); }
+  else { fail++; console.log('✘ E4 尾声句缺失'); }
+}
+{
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '1-1': '多与同窗交游',
+    '2-3': '为吕不韦收尸', '2-4': '只做离间',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '举荐韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '官藏代焚', '4-6': '为扶苏缓颊',
+    'cj-yaojia': '挺身力保', 'cj-tuiyin': '再留一程',   // 挺身力保：韩非存活至结局
+    '5-1': '怒斥', '5-2': '拒之。宁死'
+  });
+  expect('韩非存活线', g.ending, 'E5');
+  const withScore = g.ending.scores.shiping, alive = !!g.ending.aliveNote;
+  delete g.flags.hanfeicun;
+  const ctrl = g.buildEnding('E5', null); // 同状态去 flag 重建对照
+  if (alive && !ctrl.aliveNote && withScore === ctrl.scores.shiping + 10) { pass++; console.log('✔ 韩非存活：史评 ' + ctrl.scores.shiping + '→' + withScore + '（+10），aliveNote 置位'); }
+  else { fail++; console.log('✘ 韩非存活史评异常：' + withScore + ' vs 对照 ' + ctrl.scores.shiping); }
+}
+
+/* ---------- 37. yuwei：5-1-B 虚与委蛇后 5-2 非史实选项门槛 +5（GDD 5-1-B 结算注） ---------- */
+{
+  const g1 = driveTo('5-1', { '0-1': 1, '3-1': 1 }); // 观鼠悟道（guanshu）+ 史实主线
+  g1.attrs.caixue = 67; // 介于原门槛 65 与 +5 后 70 之间
+  const i1 = g1.getOptions().findIndex(o => o.opt.t.indexOf('虚与委蛇') >= 0);
+  g1.choose(i1); g1.proceed();
+  const withYw = g1.getOptions().find(o => o.opt.t.indexOf('假意从之') >= 0);
+  if (g1.eventId === '5-2' && g1.flags.yuwei && withYw.risky && withYw.risky.rate === 70 && withYw.risky.unmet[0].need === 70) { pass++; console.log('✔ 虚与委蛇后 5-2「假意从之」门槛+5：才学 67/70 转险招（成功率 70%）'); }
+  else { fail++; console.log('✘ yuwei 门槛加成未生效'); }
+  const alt = g1.findEvent('5-2').altSegs;
+  if (alt && alt.flag === 'yuwei' && alt.segs.length > 0) { pass++; console.log('✔ 5-2 持 altSegs 话术变体（flag: yuwei，渲染分支归 UI）'); }
+  else { fail++; console.log('✘ 5-2 altSegs 缺失'); }
+  const g2 = driveTo('5-1', { '0-1': 1, '3-1': 1 });
+  g2.attrs.caixue = 67;
+  const i2 = g2.getOptions().findIndex(o => o.opt.t.indexOf('怒斥') >= 0);
+  g2.choose(i2); g2.proceed();
+  const noYw = g2.getOptions().find(o => o.opt.t.indexOf('假意从之') >= 0);
+  if (!g2.flags.yuwei && !noYw.locked && !noYw.risky) { pass++; console.log('✔ 对照：怒斥线才学 67 按原门槛 65 解锁（无锁无险）'); }
+  else { fail++; console.log('✘ yuwei 对照路线异常'); }
+}
+
+/* ---------- 38. chapterProgress() 新口径：choose 关键事件后 done+1，行动卡与际遇不计（GDD 3.3） ---------- */
+{
+  const g = new E.Game(D, 'normal', () => 0.01); // 必触发际遇
+  g.start(); g.beginEvents();
+  const p0 = g.chapterProgress();
+  if (p0.done === 0 && p0.total === D.CHAPTERS[0].events.length) { pass++; console.log('✔ 章首进度 ' + p0.done + '/' + p0.total + '（新口径：choose 关键事件后才 +1）'); }
+  else { fail++; console.log('✘ 章首进度异常：' + JSON.stringify(p0)); }
+  // 行动卡不计入章内进度
+  const offer = g.getOffer();
+  let ai = -1;
+  for (let i = 1; i < offer.length; i++) if (!offer[i].locked) { ai = i; break; }
+  g.playCard(ai);
+  const pA = g.chapterProgress();
+  if (pA.done === 0) { pass++; console.log('✔ 行动卡不计入章内进度（done 仍 0）'); }
+  else { fail++; console.log('✘ 行动卡被计入进度：' + JSON.stringify(pA)); }
+  g.playCard(0); // 关键卡 → 0-1
+  g.choose(0); g.proceed(); // 0-1 → 0-2
+  const p1 = g.chapterProgress();
+  if (p1.done === 1 && p1.total === p0.total) { pass++; console.log('✔ choose 关键事件后进度 ' + p1.done + '/' + p1.total); }
+  else { fail++; console.log('✘ 进度递增异常：' + JSON.stringify(p1)); }
+  const ev = g.maybeRandom();
+  g.choose(0); g.proceed(); // 际遇结算 → RETURN 0-2
+  const p2 = g.chapterProgress();
+  if (ev && ev.id.indexOf('R-') === 0 && p2.done === 1 && g.eventId === '0-2') { pass++; console.log('✔ 际遇 ' + ev.id + ' 插入不计入章内进度'); }
+  else { fail++; console.log('✘ 际遇进度口径异常：' + JSON.stringify(p2)); }
+}
+
+/* ---------- 39. exportSave/importSave 往返与校验（GDD 6.4：章首存档点语义） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  g.playCard(0); g.choose(1); g.proceed(); // 0-1 驻足细想
+  g.playCard(0); g.choose(1); g.proceed(); // 0-2 辞去吏职 → 0-4
+  g.playCard(0); g.choose(0); g.proceed(); // 0-4 → 章末结算页
+  if (g.phase === 'summary') g.proceedSummary(); // → 第一章章首
+  const save = g.exportSave();
+  if (save && save.diffKey === 'normal' && save.chapterIdx === 1 && save.snapshot.eventId === '1-1') { pass++; console.log('✔ 章首导出存档（难度 ' + save.diffKey + '，章 ' + save.chapterIdx + '，事件 ' + save.snapshot.eventId + '）'); }
+  else { fail++; console.log('✘ 导出存档异常：' + JSON.stringify(save && save.snapshot && save.snapshot.eventId)); }
+  if (save && save.snapshot.actionUses && save.snapshot.keyRoundsLeft === E.KEY_CARD_ROUNDS) { pass++; console.log('✔ 存档快照覆盖回合制状态（actionUses/keyRoundsLeft）'); }
+  else { fail++; console.log('✘ 存档快照缺回合制状态'); }
+  g.beginEvents();
+  g.playCard(0); g.choose(0); g.proceed(); // 1-1 潜心问学 → 1-2，偏离章首状态
+  const ok = g.importSave(save);
+  const s = save.snapshot;
+  const same = ok && g.phase === 'intro' && g.eventId === s.eventId && g.dev === s.dev
+    && JSON.stringify(g.attrs) === JSON.stringify(s.attrs)
+    && JSON.stringify(g.flags) === JSON.stringify(s.flags);
+  if (same) { pass++; console.log('✔ 导入后关键状态与章首快照一致（attrs/dev/flags/eventId/phase）'); }
+  else { fail++; console.log('✘ 导入状态不一致'); }
+  if (JSON.stringify(g.actionUses) === JSON.stringify(s.actionUses) && g.keyRoundsLeft === s.keyRoundsLeft) { pass++; console.log('✔ 导入后 actionUses/keyRoundsLeft 与快照一致'); }
+  else { fail++; console.log('✘ 导入后回合制状态不一致'); }
+  if (g.importSave(null) === false && g.importSave({}) === false
+    && g.importSave({ diffKey: 'hardcore', chapterIdx: 1, snapshot: s }) === false
+    && g.importSave({ diffKey: 'normal', chapterIdx: 99, snapshot: s }) === false) { pass++; console.log('✔ 坏对象/串难度/越界章 importSave 均返回 false'); }
+  else { fail++; console.log('✘ importSave 校验异常'); }
+  const gh = new E.Game(D, 'hardcore', rngHigh);
+  gh.start();
+  if (gh.exportSave() === null) { pass++; console.log('✔ 硬核难度（无回溯额度）exportSave 返回 null'); }
+  else { fail++; console.log('✘ 硬核不应可导出存档'); }
+}
+
+/* ---------- 40. CHAPTERS summaryNotes → 章末结算页 notes（序章 3 条教学） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  g.playCard(0); g.choose(0); g.proceed(); // 0-1
+  g.playCard(0); g.choose(0); g.proceed(); // 0-2 忍了 → 0-3
+  g.playCard(0); g.choose(0);              // 0-3 变卖家资 → NEXT
+  const r = g.proceed();    // → 章末结算页
+  const notes = r.summary && r.summary.notes;
+  if (r.type === 'summary' && notes && notes.length === 3 && notes === D.CHAPTERS[0].summaryNotes) { pass++; console.log('✔ 序章结算页 summary.notes 为 3 条（引用 CHAPTERS.summaryNotes）'); }
+  else { fail++; console.log('✘ 结算页 notes 异常：' + (notes && notes.length)); }
+  if (D.CHAPTERS.every(ch => Array.isArray(ch.summaryNotes) && ch.summaryNotes.length > 0)) { pass++; console.log('✔ 各章均有 summaryNotes'); }
+  else { fail++; console.log('✘ 有章节缺 summaryNotes'); }
+}
+
+/* ---------- 41. 修正池结构：9 条因果化、三段各 3 条；逆天段池首含正危机（BACKLASH 断言依赖） ---------- */
+{
+  const seg = function (min) { return D.CORRECTIONS.filter(c => c.minDev === min); };
+  const s1 = seg(21), s2 = seg(46), s3 = seg(71);
+  if (D.CORRECTIONS.length === 9 && s1.length === 3 && s2.length === 3 && s3.length === 3) { pass++; console.log('✔ 修正池 9 条：微澜(21–45)/改流(46–70)/逆天(71–100) 各 3 条'); }
+  else { fail++; console.log('✘ 修正池结构异常：共 ' + D.CORRECTIONS.length + ' 条，分段 ' + s1.length + '/' + s2.length + '/' + s3.length); }
+  if (s3[0].eff.attrs && s3[0].eff.attrs.weiji > 0) { pass++; console.log('✔ 逆天段池首项含正危机（+' + s3[0].eff.attrs.weiji + '），固定 rng 下章中反噬恒取此项'); }
+  else { fail++; console.log('✘ 逆天段池首项危机非正（会破坏 #21 反噬断言）'); }
+}
+
+/* ---------- 42. E1 变体「无言东市」：史实线 6-3 沉默赴死 → E1/wuyan ---------- */
+{
+  const { g } = play('normal', {
+    '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
+    '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
+    '2-1': '埋头著文', '2-2': '灭诸侯、成帝业', '2-3': '上书自辩', '2-4': '全力经略',
+    '3-1': '拖延时日', '3-2': '上书——',
+    '4-1': '物禁大盛', '4-2': '弹劾韩非', '4-3': '独排众议', '4-4': '倾力推行', '4-5': '上焚书议', '4-6': '缄默',
+    '5-1': '怒斥', '5-2': '从之。矫诏',
+    '6-1': '上督责书', '6-2': '照常入谏', '6-3': '不写了'
+  });
+  expect('无言东市变体', g.ending, 'E1', 'wuyan');
+}
+
+/* ---------- 43. 回合发牌 offer 结构：1 关键 + ≤3 行动；行动卡 chapters 过滤（不同章池不同） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  const offer = g.getOffer();
+  const key = offer[0];
+  const acts = offer.slice(1);
+  const structOk = key.type === 'key' && key.eventId === '0-1' && typeof key.title === 'string' && key.title.length > 0
+    && key.roundsLeft === E.KEY_CARD_ROUNDS && key.inserted === false
+    && acts.length > 0 && acts.length <= 3
+    && acts.every(o => o.type === 'action' && o.action && typeof o.locked === 'boolean' && typeof o.usedCount === 'number' && typeof o.diminishing === 'boolean');
+  if (structOk) { pass++; console.log('✔ offer 结构：1 关键卡（' + key.eventId + '「' + key.title + '」倒计时 ' + key.roundsLeft + '）+ ' + acts.length + ' 行动卡'); }
+  else { fail++; console.log('✘ offer 结构异常：' + JSON.stringify(offer.map(o => o.type))); }
+  // chapters 过滤：章 0 offer 内行动均覆盖章 0，且不含他章专属（如 ACT-13 兰陵）
+  const inCh0 = acts.every(o => o.action.chapters[0] <= 0 && 0 <= o.action.chapters[1]);
+  if (inCh0) { pass++; console.log('✔ 章 0 行动卡 chapters 过滤正确（' + acts.map(o => o.action.id).join('、') + '）'); }
+  else { fail++; console.log('✘ 章 0 行动卡越章：' + acts.map(o => o.action.id).join('、')); }
+  // 不同章池不同：章 1 offer 行动均覆盖章 1，且两章可用池 id 集不同
+  const poolOf = ci => D.ACTIONS.filter(a => a.chapters[0] <= ci && ci <= a.chapters[1]).map(a => a.id).join(',');
+  const g1 = new E.Game(D, 'normal', rngHigh);
+  g1.randomOn = false; g1.start(); g1.enterChapter(1); g1.beginRounds();
+  const acts1 = g1.getOffer().slice(1);
+  const inCh1 = acts1.every(o => o.action.chapters[0] <= 1 && 1 <= o.action.chapters[1]);
+  if (inCh1 && poolOf(0) !== poolOf(1)) { pass++; console.log('✔ 章 1 行动卡 chapters 过滤正确，且章 0/章 1 行动池不同'); }
+  else { fail++; console.log('✘ 章 1 行动卡过滤异常：' + acts1.map(o => o.action.id).join('、')); }
+}
+
+/* ---------- 44. 关键卡倒计时：连出行动卡 roundsLeft 3→2→1→0，归零强制进入关键事件抉择（不自动结算）；第 3 次收益至下限 1 ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  const seen = [];
+  let r = null;
+  for (let k = 0; k < 3; k++) {
+    seen.push(g.getOffer()[0].roundsLeft);
+    g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }]; // stub 发牌锁定同一行动
+    r = g.playCard(1);
+  }
+  if (seen.join('→') === '3→2→1') { pass++; console.log('✔ 关键卡倒计时随行动卡递减：' + seen.join('→') + '→0'); }
+  else { fail++; console.log('✘ 倒计时序列异常：' + seen.join('→')); }
+  // 第 3 次使用：才学 4/4=1（下限 1）、声望 2/4→下限 1、危机代价 +2 不减
+  const d3cx = r.changes.find(c => c.k === 'caixue'), d3sw = r.changes.find(c => c.k === 'shengwang'), d3wj = r.changes.find(c => c.k === 'weiji');
+  if (r.useCount === 3 && d3cx.delta === 1 && d3sw.delta === 1 && d3wj.delta === 2) { pass++; console.log('✔ 第 3 次收益收敛至下限 ±1（才学+1 声望+1），代价危机+2 不减'); }
+  else { fail++; console.log('✘ 递减下限异常：' + JSON.stringify(r.changes)); }
+  // 归零强制抉择：停在 0-1 事件页（phase 'event'），未自动 choose、未推进；成就「时不我待」解锁
+  if (r.forcedKey === true && g.phase === 'event' && g.eventId === '0-1' && !r.route && !g.flags.guanshu) {
+    pass++; console.log('✔ 倒计时归零强制进入 0-1 抉择页（forcedKey，未自动结算、未推进）');
+  } else { fail++; console.log('✘ 强制抉择异常：eventId=' + g.eventId + ' phase=' + g.phase + ' forcedKey=' + r.forcedKey); }
+  if (g.ach.includes('shiwodai') && r.achNew && r.achNew.indexOf('时不我待') >= 0) { pass++; console.log('✔ 成就解锁：时不我待（倒计时归零被历史赶上）'); }
+  else { fail++; console.log('✘ 强制抉择未解锁成就 shiwodai'); }
+  // 玩家亲选史实项（驻足细想）后正常推进：0-2 新回合、倒计时回满
+  const idx01 = g.getOptions().findIndex(o => o.opt.t.indexOf('驻足细想') >= 0);
+  g.choose(idx01);
+  const rt = g.proceed();
+  if (rt && rt.type === 'round' && g.eventId === '0-2' && g.phase === 'round' && g.keyRoundsLeft === E.KEY_CARD_ROUNDS && g.flags.guanshu) {
+    pass++; console.log('✔ 强制抉择后玩家亲选：0-1 史实项结算，推进至 0-2，倒计时回满');
+  } else { fail++; console.log('✘ 亲选推进异常：eventId=' + g.eventId + ' phase=' + g.phase + ' route=' + JSON.stringify(rt && rt.type)); }
+}
+
+/* ---------- 45. hist 未达标转险招时强制抉择：事件页 hist 选项变险招（15%），玩家亲选无门槛项（6-3 才学不足→「不写了」） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start();
+  g.enterChapter(6);
+  g.eventId = '6-3';
+  g.attrs.caixue = 30; // 「狱中上书」（hist）需才学 60 → 险招（差 21 → 15%）
+  g.beginRounds();
+  let r = null;
+  for (let k = 0; k < 3; k++) {
+    g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-4' }]; // 闭门读书：才学+3，30→39 仍不足 60
+    r = g.playCard(1);
+  }
+  const opts63 = g.getOptions();
+  const histRisky = opts63[0].risky && opts63[0].risky.rate === 15; // options[0] = hist「狱中上书」转险招 15%
+  if (r.forcedKey === true && g.phase === 'event' && g.eventId === '6-3' && histRisky && !opts63[1].locked && !opts63[1].risky) {
+    pass++; console.log('✔ 强制抉择（hist 未达标转险招 15%）：停在 6-3 事件页，玩家须亲选');
+  } else { fail++; console.log('✘ 强制抉择（hist 险招）异常：eventId=' + g.eventId + ' phase=' + g.phase + ' histRisky=' + histRisky); }
+  g.choose(1);
+  const rt63 = g.proceed();
+  if (g.eventId === '6-4' && rt63) {
+    pass++; console.log('✔ 玩家亲选无门槛项「不写了。沉默赴死」→ 6-4');
+  } else { fail++; console.log('✘ 亲选推进异常：eventId=' + g.eventId); }
+}
+
+/* ---------- 45b. 险招机制：梯度 / 分类 / 选项成败 / 行动卡成败 / 硬锁与际遇（GDD 附录 J） ---------- */
+{
+  // 1. 成功率六档梯度（差 ≤3/6/9/12/15/>15 → 70/50/40/30/20/15）
+  const gg = new E.Game(D, 'normal', rngHigh);
+  const tiers = [3, 6, 9, 12, 15, 16].map(x => gg.riskRate(x));
+  if (tiers.join('/') === '70/50/40/30/20/15') { pass++; console.log('✔ 险招成功率六档梯度：' + tiers.join('/')); }
+  else { fail++; console.log('✘ 梯度异常：' + tiers.join('/')); }
+  // 2. 软硬分类：flag 硬锁优先；行动卡 caifu 特判硬；多门槛取最低档
+  gg.attrs = { quanshi: 47, shengwang: 50, junxin: 40, caifu: 5, caixue: 30, weiji: 10 };
+  const crMix = gg.checkRisk({ junxin: 50, flag: 'fusu' }, false);
+  const crCaifu = gg.checkRisk({ caifu: 8 }, true);
+  const crMulti = gg.checkRisk({ junxin: 43, caixue: 50 }, false); // gap 7→50 / gap 20→15 → min 15
+  if (crMix.hardOk === false && crMix.hardReason === '需要扶苏的信任' && crMix.unmet.length === 1
+    && crCaifu.hardOk === false && crCaifu.rate === null
+    && crMulti.rate === 15) { pass++; console.log('✔ 软硬门槛分类：flag/行动caifu 硬锁优先，多门槛取最低档（min 15%）'); }
+  else { fail++; console.log('✘ 分类异常：' + JSON.stringify({ m: crMix.hardOk, c: crCaifu.hardOk, r: crMulti.rate })); }
+}
+
+{
+  // 3. 选项险招·成功：6-3「狱中上书」需才学 60，才学 55（差 5 → 50%），roll 31 ≤ 50 正常结算推进
+  const g = new E.Game(D, 'normal', () => 0.3);
+  g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
+  g.attrs.caixue = 55; g.beginRounds(); g.playCard(0);
+  const opts = g.getOptions();
+  const r = g.choose(0);
+  const rt = (r && !r.failed) ? g.proceed() : null;
+  if (opts[0].risky && opts[0].risky.rate === 50 && r && !r.failed && r.risk.success && r.risk.roll === 31
+    && g.eventId === '6-4' && g.phase === 'round') { pass++; console.log('✔ 险招成功：roll 31 ≤ 50，「狱中上书」正常结算推进 6-4'); }
+  else { fail++; console.log('✘ 险招成功路径异常：' + JSON.stringify({ rate: opts[0].risky && opts[0].risky.rate, failed: r && r.failed, ev: g.eventId, phase: g.phase })); }
+}
+
+{
+  // 4. 选项险招·失败：roll 81 ＞ 50 → 危机+5、选项烧毁（已试，事未谐）、留在本事件改选
+  const g = new E.Game(D, 'normal', () => 0.8);
+  g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
+  g.attrs.caixue = 55; const wj0 = g.attrs.weiji; g.beginRounds(); g.playCard(0);
+  const r = g.choose(0);
+  const opts2 = g.getOptions();
+  const failOk = r && r.failed === true && r.risk.roll === 81 && g.phase === 'event'
+    && g.attrs.weiji === wj0 + 5
+    && opts2[0].locked === true && opts2[0].reason === '已试，事未谐';
+  g.choose(1); g.proceed(); // 改选「不写了」正常推进
+  if (failOk && g.eventId === '6-4') { pass++; console.log('✔ 险招失败：roll 81 ＞ 50，危机+5、选项烧毁，改选「不写了」推进 6-4'); }
+  else { fail++; console.log('✘ 险招失败路径异常：' + JSON.stringify({ failed: r && r.failed, roll: r && r.risk.roll, phase: g.phase, ev: g.eventId })); }
+}
+
+{
+  // 5. 行动卡险招：ACT-22「修书吕门」需才学 45，才学 40（差 5 → 50%）入池带 risky；失败徒劳+计次+推进，成功正常结算
+  const g1 = new E.Game(D, 'normal', () => 0.8);
+  g1.randomOn = false; g1.start(); g1.enterChapter(2); g1.attrs.caixue = 40;
+  g1.beginRounds();
+  g1.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-22' }];
+  const off1 = g1.getOffer();
+  const r1 = g1.playCard(1);
+  const okActFail = off1[1].risky && off1[1].risky.rate === 50 && r1.failed === true && r1.text === '徒劳一场。'
+    && r1.useCount === 1 && r1.changes.some(c => c.k === 'weiji' && c.delta === 3) && r1.route && r1.route.type === 'round';
+  const g2 = new E.Game(D, 'normal', () => 0.3);
+  g2.randomOn = false; g2.start(); g2.enterChapter(2); g2.attrs.caixue = 40;
+  g2.beginRounds();
+  g2.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-22' }];
+  const r2 = g2.playCard(1);
+  const okActSucc = r2 && !r2.failed && r2.risk.roll === 31 && g2.attrs.caixue === 42; // 修书吕门 caixue+2
+  if (okActFail && okActSucc) { pass++; console.log('✔ 行动卡险招：入池带 risky（50%）；失败徒劳危机+3计次推进，成功 roll 31 正常结算'); }
+  else { fail++; console.log('✘ 行动卡险招异常：' + JSON.stringify({ f: okActFail, s: okActSucc, roll: r2 && r2.risk && r2.risk.roll })); }
+}
+
+{
+  // 6. 硬锁不变：caifu 支付检查卡在财富 0 时不入池；际遇选项险招成功路径
+  const g = new E.Game(D, 'normal', () => 0.3);
+  g.randomOn = false; g.start(); g.enterChapter(2); g.attrs.caifu = 0;
+  g.beginRounds();
+  const noCaifuCards = g.getOffer().slice(1).every(o => !(o.action && o.action.req && o.action.req.caifu));
+  const r5 = D.RANDOM_EVENTS.find(e => e.id === 'R-5');
+  g.currentRandom = r5; g.eventId = 'R-5'; g.phase = 'event'; g.attrs.caixue = 45; // 「拦住穷究其言」需 50，差 5 → 50%
+  const opts5 = g.getOptions();
+  const r = g.choose(2); // roll 31 ≤ 50 成功：caixue+3
+  if (noCaifuCards && opts5[2].risky && opts5[2].risky.rate === 50 && r && !r.failed && r.risk.success && g.attrs.caixue === 48) {
+    pass++; console.log('✔ 硬锁不变（caifu 支付卡财富 0 不入池）；际遇险招成功（roll 31 ≤ 50，才学 45→48）');
+  } else { fail++; console.log('✘ 硬锁/际遇险招异常：' + JSON.stringify({ noCaifuCards, r5rate: opts5[2].risky && opts5[2].risky.rate, failed: r && r.failed })); }
+}
+
+/* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8、zg ≤±5、带 chapters 且每章池 12 ---------- */
+{
+  const bad = [];
+  D.ACTIONS.forEach(a => {
+    if (!Array.isArray(a.chapters) || a.chapters.length !== 2) bad.push(a.id + ' 缺 chapters');
+    const eff = a.eff || {};
+    Object.keys(eff.attrs || {}).forEach(k => { if (Math.abs(eff.attrs[k]) > 8) bad.push(a.id + ' ' + k + '=' + eff.attrs[k]); });
+    if (eff.zg && Math.abs(eff.zg) > 5) bad.push(a.id + ' zg=' + eff.zg);
+    if (eff.flags || eff.rmflags || eff.hist || eff.merit) bad.push(a.id + ' 干扰结局树字段');
+  });
+  const poolSizes = [];
+  for (let ci = 0; ci <= 6; ci++) poolSizes.push(D.ACTIONS.filter(a => a.chapters[0] <= ci && ci <= a.chapters[1]).length);
+  if (D.ACTIONS.length === 48 && bad.length === 0 && poolSizes.every(n => n === 12)) { pass++; console.log('✔ 48 个行动数据卫生：单项 ≤±8、zg ≤±5、每章池 12（' + poolSizes.join('/') + '）'); }
+  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + poolSizes.join('/'))); }
+}
+
+/* ---------- 47. 成就埋点：义薄云天（2-3-C 收尸）/ 护书之人（4-5-B 官藏代焚）/ 死里逃生（3-3-A 狱中书） ---------- */
+{
+  const g1 = driveTo('2-4', { '2-3': 2 }); // 为吕不韦收尸
+  if (g1.ach.includes('yibo')) { pass++; console.log('✔ 成就埋点：义薄云天（2-3-C 为吕不韦收尸）'); }
+  else { fail++; console.log('✘ 2-3-C 未解锁成就 yibo'); }
+
+  const g2 = driveTo('4-6', { '3-1': 1, '4-5': 1 }); // 拖延时日 → 上书（默认首选）→ 官藏代焚
+  if (g2.ach.includes('hushu')) { pass++; console.log('✔ 成就埋点：护书之人（4-5-B 官藏代焚）'); }
+  else { fail++; console.log('✘ 4-5-B 未解锁成就 hushu'); }
+
+  // 3-3-A：构造危机 69（避开 shouxi≥70 异变）、才学 65、君心 40（避开 mibao≥45）进第三章
+  const g3 = new E.Game(D, 'normal', rngHigh);
+  g3.randomOn = false; g3.start();
+  g3.attrs.weiji = 69; g3.attrs.caixue = 65; g3.attrs.junxin = 40;
+  g3.enterChapter(3); g3.beginEvents();
+  g3.playCard(0);                 // → 事件 3-1
+  if (g3.eventId === '3-1') {
+    g3.choose(2); g3.proceed();   // 藏匿咸阳：危机 69+15=84 ≥80 → 下狱 3-3
+    g3.playCard(0);               // → 事件 3-3
+    const opts33 = g3.getOptions();
+    if (g3.eventId === '3-3' && !opts33[0].locked) {
+      g3.choose(0);               // 狱中上书，陈情自辩：危机 84-30=54
+      if (g3.ach.includes('sili') && g3.attrs.weiji === 54) { pass++; console.log('✔ 成就埋点：死里逃生（3-3-A 狱中书复官）'); }
+      else { fail++; console.log('✘ 3-3-A 结算异常：ach=' + g3.ach.join(',') + ' weiji=' + g3.attrs.weiji); }
+    } else { fail++; console.log('✘ 3-3-A 未到达或被锁定：eventId=' + g3.eventId); }
+  } else { fail++; console.log('✘ 第三章起始事件异常：' + g3.eventId); }
+}
+
+/* ---------- 48. 百科词条完整性：所有 ⟦标记⟧ 均有定义，词条库 ≥40 条（GDD 5.6 阶段 2 口径） ---------- */
+{
+  const s = JSON.stringify(D.CHAPTERS) + JSON.stringify(D.RANDOM_EVENTS) + JSON.stringify(D.CRISIS_EVENTS) + JSON.stringify(D.ACTIONS);
+  const marks = [...new Set([...s.matchAll(/⟦(.+?)⟧/g)].map(m => m[1]))];
+  const missing = marks.filter(t => !D.GLOSSARY[t]);
+  if (missing.length === 0 && Object.keys(D.GLOSSARY).length >= 40) { pass++; console.log('✔ 百科词条：' + marks.length + ' 种标记全部有定义，词条库 ' + Object.keys(D.GLOSSARY).length + ' 条'); }
+  else { fail++; console.log('✘ 词条缺定义：' + missing.join('、') + '；库容 ' + Object.keys(D.GLOSSARY).length); }
+}
+
+/* ---------- 49. 章内进度口径：startAlt 条件起点跳过的章首事件不计入分母（GDD 3.3） ---------- */
+{
+  const g1 = new E.Game(D, 'normal', rngHigh);
+  g1.randomOn = false; g1.start();
+  g1.attrs.junxin = 50; // mibao：3-0 起点
+  g1.enterChapter(3);
+  const p1 = g1.chapterProgress();
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.randomOn = false; g2.start();
+  g2.enterChapter(3);   // 君心 20：3-1 起点，3-0 不出现
+  const p2 = g2.chapterProgress();
+  if (p1.total === 4 && p2.total === 3) { pass++; console.log('✔ 章内进度分母按实际起点调整（密报线 4 / 常规线 3）'); }
+  else { fail++; console.log('✘ 进度分母异常：密报线 ' + p1.total + ' / 常规线 ' + p2.total); }
+}
+
+/* ---------- 50. 蒙恬敌意实装（GDD 4.3）：lianmeng/mtdi 埋点与 5-4 兵变判定分支 ---------- */
+{
+  // (a) 5-1-D 埋点：偏离≥46 选「密遣心腹，北联蒙恬」→ 置 lianmeng，结算条目带注记
+  const ga = new E.Game(D, 'normal', rngHigh);
+  ga.randomOn = false; ga.start(); ga.dev = 50; ga.enterChapter(5); ga.beginEvents();
+  ga.playCard(0); // 关键卡 → 5-1
+  const iD = ga.getOptions().findIndex(o => o.opt.t.indexOf('密遣心腹') >= 0);
+  const ra = ga.choose(iD);
+  if (ga.flags.lianmeng && ra.changes.some(c => c.note && c.note.indexOf('北军') >= 0) && ra.text.indexOf('蒙恬收下了玉璧') >= 0) { pass++; console.log('✔ 5-1-D 埋点：置 Flag【已联蒙恬】，结算文本与注记呼应'); }
+  else { fail++; console.log('✘ lianmeng 埋点异常：flag=' + !!ga.flags.lianmeng + ' changes=' + JSON.stringify(ra.changes)); }
+  // (b) lianmeng → 5-4 放宽：危机 90（>84 原上限）仍可达 E6 正传
+  const gb = new E.Game(D, 'normal', rngHigh);
+  gb.start(); gb.enterChapter(5);
+  gb.flags.fusu = true; gb.flags.lianmeng = true; gb.attrs.weiji = 90; gb.eventId = '5-4';
+  gb.choose(0); gb.proceed();
+  if (gb.ending && gb.ending.id === 'E6' && !gb.ending.variant) { pass++; console.log('✔ 已联蒙恬：5-4 判定放宽（危机 90>84 仍收 E6 正传）'); }
+  else { fail++; console.log('✘ lianmeng 放宽异常：' + (gb.ending && gb.ending.id + '/' + gb.ending.variant)); }
+  // (c) 对照：无旗维持现状——同样危机 90 只能 E6/kaifu
+  const gc = new E.Game(D, 'normal', rngHigh);
+  gc.start(); gc.enterChapter(5);
+  gc.flags.fusu = true; gc.attrs.weiji = 90; gc.eventId = '5-4';
+  gc.choose(0); gc.proceed();
+  if (gc.ending && gc.ending.id === 'E6' && gc.ending.variant === 'kaifu') { pass++; console.log('✔ 对照（无旗）：危机 90 按原判定收 E6/开府之阶（现状不变）'); }
+  else { fail++; console.log('✘ 无旗对照异常：' + (gc.ending && gc.ending.id + '/' + gc.ending.variant)); }
+  // (d) 4-6-C 埋点：附议重罚扶苏 → 置 mtdi，结算条目带注记
+  const gd = driveTo('4-6', { '3-1': 1 });
+  const iC = gd.getOptions().findIndex(o => o.opt.t.indexOf('附议重罚') >= 0);
+  const rd = gd.choose(iC);
+  if (gd.flags.mtdi && rd.changes.some(c => c.note && c.note.indexOf('蒙恬') >= 0)) { pass++; console.log('✔ 4-6-C 埋点：置 Flag【蒙恬敌意】，结算注记「' + rd.changes.find(c => c.note).note + '」'); }
+  else { fail++; console.log('✘ mtdi 埋点异常：flag=' + !!gd.flags.mtdi); }
+  // (e) mtdi → 5-4 降档：危机未炽则蒙恬按兵，你死于乱中而扶苏终立（E6/kaifu）
+  const ge = new E.Game(D, 'normal', rngHigh);
+  ge.start(); ge.enterChapter(5);
+  ge.flags.fusu = true; ge.flags.mtdi = true; ge.attrs.weiji = 50; ge.eventId = '5-4';
+  ge.choose(0); ge.proceed();
+  if (ge.ending && ge.ending.id === 'E6' && ge.ending.variant === 'kaifu') { pass++; console.log('✔ 蒙恬敌意：兵变降档——危机 50 收 E6/开府之阶（原可收 E6 正传）'); }
+  else { fail++; console.log('✘ mtdi 降档异常：' + (ge.ending && ge.ending.id + '/' + ge.ending.variant)); }
+  // (f) mtdi 且危机炽 → 兵变必败（E8/矫诏事发）
+  const gf = new E.Game(D, 'normal', rngHigh);
+  gf.start(); gf.enterChapter(5);
+  gf.flags.fusu = true; gf.flags.mtdi = true; gf.attrs.weiji = 90; gf.eventId = '5-4';
+  gf.choose(0); gf.proceed();
+  if (gf.ending && gf.ending.id === 'E8' && gf.ending.variant === 'xiefa') { pass++; console.log('✔ 蒙恬敌意且危机炽：兵变必败，收 E8/矫诏事发'); }
+  else { fail++; console.log('✘ mtdi 必败异常：' + (gf.ending && gf.ending.id + '/' + gf.ending.variant)); }
+}
+
+/* ---------- 51. 死 Flag 兑现：zhihanfei → 4-2 altSegs 文本变体 + 选项 B condAttrs 增益（GDD 1-1-C） ---------- */
+{
+  const g = driveTo('4-2', { '3-1': 1, '1-1': 2 }); // 常与韩非论辩 → zhihanfei
+  const alt = g.findEvent('4-2').altSegs;
+  if (g.flags.zhihanfei && alt && alt.flag === 'zhihanfei' && alt.segs[1].indexOf('兰陵') >= 0) { pass++; console.log('✔ 持【知韩非】：4-2 配 altSegs 文本变体（你早知此人才华与锋芒）'); }
+  else { fail++; console.log('✘ 4-2 altSegs 异常：' + JSON.stringify(alt && alt.flag)); }
+  const r = g.choose(1); // 举荐韩非，共治秦廷
+  const hit = r.changes.find(c => c.k === 'shengwang' && c.delta === 3 && c.note);
+  if (hit) { pass++; console.log('✔ 知韩非判定兑现：举荐韩非结算含 condAttrs 声望+3（' + hit.note + '）'); }
+  else { fail++; console.log('✘ zhihanfei condAttrs 异常：' + JSON.stringify(r.changes)); }
+}
+
+/* ---------- 52. 死 Flag 兑现：zhezhong → E4/E6 史传追加「官藏代焚，书得不绝」尾声句（GDD 4-5-B） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start(); g.flags.zhezhong = true;
+  const e4 = g.buildEnding('E4', null), e6 = g.buildEnding('E6', null);
+  if (e4.zhuan.indexOf('官藏代焚') >= 0 && e6.zhuan.indexOf('官藏代焚') >= 0) { pass++; console.log('✔ 持【焚书折中】：E4 与 E6 史传均追加官藏代焚尾声句'); }
+  else { fail++; console.log('✘ zhezhong 尾声缺失'); }
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.start();
+  if (g2.buildEnding('E4', null).zhuan.indexOf('官藏代焚') < 0) { pass++; console.log('✔ 对照：无 flag 的 E4 史传无此尾声'); }
+  else { fail++; console.log('✘ zhezhong 对照异常'); }
+}
+
+/* ---------- 53. 死 Flag 兑现：wu_fenshu → 第五/六章章首一次性警示 + 声望-3/章持续侵蚀（GDD 4-5-A） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start(); g.flags.wu_fenshu = true;
+  const s0 = g.attrs.shengwang;
+  g.enterChapter(5);
+  if (g.attrs.shengwang === s0 - 3 && g.introNotes.some(n => n.indexOf('污名·焚书') >= 0)) { pass++; console.log('✔ 污名·焚书：第五章章首警示 + 声望 ' + s0 + '→' + g.attrs.shengwang); }
+  else { fail++; console.log('✘ 焚书污名章首结算异常：shengwang=' + g.attrs.shengwang); }
+  g.enterChapter(6);
+  if (g.attrs.shengwang === s0 - 6 && !g.introNotes.some(n => n.indexOf('污名·焚书') >= 0) && g.introNotes.some(n => n.indexOf('士林侧目') >= 0)) { pass++; console.log('✔ 第六章侵蚀持续（声望 ' + g.attrs.shengwang + '），一次性警示不重复'); }
+  else { fail++; console.log('✘ 焚书污名持续侵蚀异常：shengwang=' + g.attrs.shengwang); }
+  // 边界对照：第四章章首不触发（正常流程旗在 4-5-A 才立，此处人工置旗仅验证 idx>=5 门槛）
+  const g3 = new E.Game(D, 'normal', rngHigh);
+  g3.start(); g3.flags.wu_fenshu = true;
+  const s3 = g3.attrs.shengwang;
+  g3.enterChapter(4);
+  if (g3.attrs.shengwang === s3 && !g3.introNotes.some(n => n.indexOf('士林侧目') >= 0)) { pass++; console.log('✔ 对照：第四章章首不触发焚书污名侵蚀（声望 ' + g3.attrs.shengwang + ' 不变）'); }
+  else { fail++; console.log('✘ 焚书污名章界异常：shengwang=' + g3.attrs.shengwang); }
+}
+
+/* ---------- 54. N1 籍没边界：capAttrs 只降不升——财富 3 的贫寒玩家不被反向补贴 ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start();
+  g.attrs.shengwang = 55; g.attrs.caifu = 3;
+  g.enterChapter(3);
+  if (g.flags.jimo && g.attrs.caifu === 3) { pass++; console.log('✔ 籍没边界：财富 3 低于封存上限，jimo 触发但财富不增（不反向补贴）'); }
+  else { fail++; console.log('✘ 籍没边界异常：jimo=' + !!g.flags.jimo + ' caifu=' + g.attrs.caifu); }
+  const g2 = new E.Game(D, 'normal', rngHigh);
+  g2.randomOn = false; g2.start();
+  g2.attrs.shengwang = 55; g2.attrs.caifu = 30;
+  g2.enterChapter(3);
+  if (g2.flags.jimo && g2.attrs.caifu === 5) { pass++; console.log('✔ 籍没封存：财富 30 高于上限，被封存至 5'); }
+  else { fail++; console.log('✘ 籍没封存异常：jimo=' + !!g2.flags.jimo + ' caifu=' + g2.attrs.caifu); }
+}
+
+/* ---------- 55. 判定树 #9 catch-all：路由条件数组全部未命中 → E8 兜底（GDD 9.1） ---------- */
+{
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.start();
+  const r = g.resolveTo([{ if: { flag: 'bucunzai' }, to: 'NEXT' }]);
+  if (r.type === 'ending' && r.ending === 'E8') { pass++; console.log('✔ 条件数组全部未命中 → {type:ending, ending:E8}（判定树 #9 兜底）'); }
+  else { fail++; console.log('✘ catch-all 异常：' + JSON.stringify(r)); }
+}
+
+console.log(`\n结果：${pass} 通过，${fail} 失败`);
+process.exit(fail > 0 ? 1 : 0);

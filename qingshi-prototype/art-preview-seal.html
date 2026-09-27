@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>印章样品</title>
+<style>body{background:#17140f;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;gap:40px;flex-wrap:wrap}
+.s{display:flex;flex-direction:column;align-items:center;gap:10px;color:#a89a7c;font:14px serif}</style></head>
+<body>
+<div class="s">
+<svg width="200" height="200" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.055" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4"/>
+    </filter>
+  </defs>
+  <g filter="url(#rough)">
+    <rect x="16" y="16" width="208" height="208" rx="16" fill="#b0432f"/>
+    <rect x="32" y="32" width="176" height="176" rx="9" fill="none" stroke="#e8dfc8" stroke-width="4" opacity="0.85"/>
+    <text x="120" y="122" text-anchor="middle" font-family="'Noto Serif SC','STKaiti','KaiTi','SimSun',serif" font-size="72" fill="#e8dfc8" font-weight="700">循</text>
+    <text x="120" y="196" text-anchor="middle" font-family="'Noto Serif SC','STKaiti','KaiTi','SimSun',serif" font-size="72" fill="#e8dfc8" font-weight="700">史</text>
+  </g>
+</svg>
+<span>循史 · 大字版（结局页用）</span>
+</div>
+<div class="s">
+<svg width="120" height="120" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <g filter="url(#rough)">
+    <rect x="16" y="16" width="208" height="208" rx="16" fill="#b0432f"/>
+    <rect x="32" y="32" width="176" height="176" rx="9" fill="none" stroke="#e8dfc8" stroke-width="4" opacity="0.85"/>
+    <text x="120" y="122" text-anchor="middle" font-family="'Noto Serif SC','STKaiti','KaiTi','SimSun',serif" font-size="72" fill="#e8dfc8" font-weight="700">循</text>
+    <text x="120" y="196" text-anchor="middle" font-family="'Noto Serif SC','STKaiti','KaiTi','SimSun',serif" font-size="72" fill="#e8dfc8" font-weight="700">史</text>
+  </g>
+</svg>
+<span>120px 缩略（分享卡用）</span>
+</div>
+</body></html>
