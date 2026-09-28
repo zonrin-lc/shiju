@@ -352,7 +352,7 @@ function expect(name, actual, wantId, wantVariant) {
 
 /* ---------- 14. 随机际遇触发与返回（round 阶段口径：RETURN 后回 round（resumed）且倒计时回满） ---------- */
 {
-  const g = new E.Game(D, 'normal', () => 0.01); // 必触发际遇
+  const g = new E.Game(D, 'normal', () => 0.01, { event: () => 0.01 }); // 际遇改走 event 流：注入常量 0.01 保持"必触发"口径
   g.start(); g.beginEvents();
   g.playCard(0); // 关键卡 → 0-1
   g.choose(0); g.proceed(); // 0-1 → 0-2（回 round）
@@ -493,7 +493,7 @@ function expect(name, actual, wantId, wantVariant) {
 
 /* ---------- 21. 逆天段（偏离≥71）章中随机反噬（GDD 5.2） ---------- */
 {
-  const g = new E.Game(D, 'normal', () => 0.01);
+  const g = new E.Game(D, 'normal', () => 0.01, { event: () => 0.01 }); // 反噬触发/抽取走 event 流：注入常量保持恒触发且恒取池首
   g.start(); g.beginEvents();
   g.dev = 75;
   const ev = g.maybeRandom();
@@ -809,7 +809,7 @@ function expect(name, actual, wantId, wantVariant) {
 
 /* ---------- 38. chapterProgress() 新口径：choose 关键事件后 done+1，行动卡与际遇不计（GDD 3.3） ---------- */
 {
-  const g = new E.Game(D, 'normal', () => 0.01); // 必触发际遇
+  const g = new E.Game(D, 'normal', () => 0.01, { event: () => 0.01 }); // 际遇改走 event 流：注入常量 0.01 保持"必触发"口径
   g.start(); g.beginEvents();
   const p0 = g.chapterProgress();
   if (p0.done === 0 && p0.total === D.CHAPTERS[0].events.length) { pass++; console.log('✔ 章首进度 ' + p0.done + '/' + p0.total + '（新口径：choose 关键事件后才 +1）'); }
@@ -1011,7 +1011,8 @@ function expect(name, actual, wantId, wantVariant) {
 
 {
   // 3. 选项险招·成功：6-3「狱中上书」（hist）需才学 60，才学 55（差 5 → 基档 50%，史实升一档 70%），roll 31 ≤ 70 正常结算推进
-  const g = new E.Game(D, 'normal', () => 0.3);
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.3 → roll 31）
+  const g = new E.Game(D, 'normal', () => 0.3, { risk: () => 0.3 });
   g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
   g.attrs.caixue = 55; g.beginRounds(); g.playCard(0);
   const opts = g.getOptions();
@@ -1024,7 +1025,8 @@ function expect(name, actual, wantId, wantVariant) {
 
 {
   // 4. 选项险招·失败：roll 81 ＞ 70（史实升档后）→ 危机+5、选项烧毁（已试，事未谐）、留在本事件改选
-  const g = new E.Game(D, 'normal', () => 0.8);
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.8 → roll 81）
+  const g = new E.Game(D, 'normal', () => 0.8, { risk: () => 0.8 });
   g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
   g.attrs.caixue = 55; const wj0 = g.attrs.weiji; g.beginRounds(); g.playCard(0);
   const r = g.choose(0);
@@ -1039,7 +1041,8 @@ function expect(name, actual, wantId, wantVariant) {
 
 {
   // 5. 行动卡险招：ACT-22「修书吕门」需才学 45，才学 40（差 5 → 50%）入池带 risky；失败徒劳+计次+推进，成功正常结算
-  const g1 = new E.Game(D, 'normal', () => 0.8);
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.8 → roll 81 失败；0.3 → roll 31 成功）
+  const g1 = new E.Game(D, 'normal', () => 0.8, { risk: () => 0.8 });
   g1.randomOn = false; g1.start(); g1.enterChapter(2); g1.attrs.caixue = 40;
   g1.beginRounds();
   g1.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-22' }];
@@ -1047,7 +1050,7 @@ function expect(name, actual, wantId, wantVariant) {
   const r1 = g1.playCard(1);
   const okActFail = off1[1].risky && off1[1].risky.rate === 50 && r1.failed === true && r1.text === '徒劳一场。'
     && r1.useCount === 1 && r1.changes.some(c => c.k === 'weiji' && c.delta === 3) && r1.route && r1.route.type === 'round';
-  const g2 = new E.Game(D, 'normal', () => 0.3);
+  const g2 = new E.Game(D, 'normal', () => 0.3, { risk: () => 0.3 });
   g2.randomOn = false; g2.start(); g2.enterChapter(2); g2.attrs.caixue = 40;
   g2.beginRounds();
   g2.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-22' }];
@@ -1059,7 +1062,8 @@ function expect(name, actual, wantId, wantVariant) {
 
 {
   // 6. 硬锁不变：caifu 支付检查卡在财富 0 时不入池；际遇选项险招成功路径
-  const g = new E.Game(D, 'normal', () => 0.3);
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.3 → roll 31）
+  const g = new E.Game(D, 'normal', () => 0.3, { risk: () => 0.3 });
   g.randomOn = false; g.start(); g.enterChapter(2); g.attrs.caifu = 0;
   g.beginRounds();
   const noCaifuCards = g.getOffer().slice(1).every(o => !(o.action && o.action.req && o.action.req.caifu));
@@ -1070,6 +1074,56 @@ function expect(name, actual, wantId, wantVariant) {
   if (noCaifuCards && opts5[2].risky && opts5[2].risky.rate === 50 && r && !r.failed && r.risk.success && g.attrs.caixue === 48) {
     pass++; console.log('✔ 硬锁不变（caifu 支付卡财富 0 不入池）；际遇险招成功（roll 31 ≤ 50，才学 45→48）');
   } else { fail++; console.log('✘ 硬锁/际遇险招异常：' + JSON.stringify({ noCaifuCards, r5rate: opts5[2].risky && opts5[2].risky.rate, failed: r && r.failed })); }
+}
+
+/* ---------- 45c. 蓄势（v1.6）：放弃出牌换下一次事件抉择险招 +10，限一次、抉择后清空 ---------- */
+{
+  // 1. 基本语义：蓄势置旗、倒计时 -1、route round；再次蓄势无效（限一次）
+  const g1 = new E.Game(D, 'normal', rngHigh);
+  g1.randomOn = false; g1.start(); g1.beginEvents();
+  const r1 = g1.playXushi();
+  const again = g1.playXushi();
+  if (r1 && r1.kind === 'xushi' && g1.xushi === true && g1.keyRoundsLeft === 2 && g1.phase === 'round' && again === null) {
+    pass++; console.log('✔ 蓄势基本语义：置旗、倒计时 3→2、限一次（再次调用无效）');
+  } else { fail++; console.log('✘ 蓄势基本语义异常：' + JSON.stringify({ k: r1 && r1.kind, x: g1.xushi, left: g1.keyRoundsLeft, again })); }
+}
+
+{
+  // 2. 蓄势对险招：5-2「假意从之」（非 hist，需才学 65 + guanshu），才学 55（差 10 → 基档 30%）+蓄势 10 → 40%；roll 36 ≤ 40 成功
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.35 → roll 36）
+  const g = new E.Game(D, 'normal', () => 0.35, { risk: () => 0.35 });
+  g.randomOn = false; g.start(); g.enterChapter(5); g.eventId = '5-2';
+  g.flags.guanshu = true; g.attrs.caixue = 55;
+  g.beginRounds();
+  g.playXushi();
+  g.playCard(0);
+  const opts = g.getOptions();
+  const r = g.choose(3);
+  if (opts[3].risky && r && r.risk && r.risk.rate === 40 && r.risk.success && !r.failed && g.xushi === false) {
+    pass++; console.log('✔ 蓄势兑现：险招 30%+10=40%，roll 36 ≤ 40 成功，蓄势清空');
+  } else { fail++; console.log('✘ 蓄势兑现异常：' + JSON.stringify({ rate: r && r.risk && r.risk.rate, success: r && r.risk && r.risk.success, x: g.xushi })); }
+}
+
+{
+  // 3. 无险招落空：蓄势后选无门槛项，蓄势照常清空
+  const g = new E.Game(D, 'normal', () => 0.5);
+  g.randomOn = false; g.start(); g.beginEvents();
+  g.playXushi();
+  g.playCard(0);
+  g.choose(0); // 0-1「驻足细想」无 req
+  if (g.xushi === false) { pass++; console.log('✔ 蓄势落空口径：无险招的抉择后蓄势清空'); }
+  else { fail++; console.log('✘ 蓄势未清空'); }
+}
+
+{
+  // 4. 余 1 轮蓄势：倒计时归零 → forcedKey 强制进入关键事件
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  for (let k = 0; k < 2; k++) { g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }]; g.playCard(1); } // 3→1
+  const r = g.playXushi(); // 1→0 → forcedKey
+  if (r && r.forcedKey === true && g.phase === 'event' && g.eventId === '0-1') {
+    pass++; console.log('✔ 余 1 轮蓄势：倒计时归零自动开启关键事件（forcedKey）');
+  } else { fail++; console.log('✘ 蓄势归零异常：' + JSON.stringify({ fk: r && r.forcedKey, phase: g.phase })); }
 }
 
 /* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8、zg ≤±5、带 chapters 且每章池 12 ---------- */

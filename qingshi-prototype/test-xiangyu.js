@@ -55,7 +55,8 @@ function play(diffKey, script, rng, endScript, hook) {
 }
 
 function driveTo(stopId, picks) {
-  const g = new E.Game(D, 'normal', rngHigh);
+  // corr 流注入 0.99：修正改走 corr 流后，保持本 helper"不遇概率修正"的原口径（契约：只适用于不遇章末事件/修正的路线）
+  const g = new E.Game(D, 'normal', rngHigh, { corr: rngHigh });
   g.randomOn = false;
   g.start();
   let guard = 0;

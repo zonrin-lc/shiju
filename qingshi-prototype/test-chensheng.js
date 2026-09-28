@@ -6,8 +6,8 @@ const E = require('./engine.js');
 const rngHigh = () => 0.99;
 const rngLow = () => 0.01;
 
-function play(diffKey, script, rng, endScript, hook) {
-  const g = new E.Game(D, diffKey, rng || rngHigh);
+function play(diffKey, script, rng, endScript, hook, streams) {
+  const g = new E.Game(D, diffKey, rng || rngHigh, streams);
   g.randomOn = false;
   g.start();
   let guard = 0;
@@ -204,7 +204,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '4-1': '令周文持重', '4-2': '黜朱房胡武',
     '5-1': '亲赴荥阳', '5-2': '立诛田臧',
     '6-1': '弃陈南走', '6-2': '察其异，先收其刃', '6-3': '南下合流'
-  });
+  }, rngHigh, null, null, { corr: rngHigh }); // 修正改走 corr 流：注入 0.99 保持原口径（概率档不触发、必选档取池末项），维持盟主线达标
   expect('逆天线（盟主）', g.ending, 'E7');
 }
 
@@ -333,7 +333,8 @@ function has(g, ach) { return g.ach.includes(ach); }
 
 /* ---------- 13. 险招定制失败：5-2 立诛田臧 effFail/resFail（GDD 附录 J） ---------- */
 {
-  const g = new E.Game(D, 'normal', () => 0.8);
+  // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.8 → roll 81）
+  const g = new E.Game(D, 'normal', () => 0.8, { risk: () => 0.8 });
   g.randomOn = false; g.start(); g.enterChapter(5); g.eventId = '5-2';
   g.flags.wuguang = true; g.attrs.junxin = 40; // 需 50，差 10 → 30%
   g.beginRounds(); g.playCard(0);

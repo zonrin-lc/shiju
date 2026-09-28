@@ -14,16 +14,44 @@
 
   function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
 
+  /* 可复现 PRNG（随机流惰性派生用；与 balance-sim.js 同款 mulberry32） */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
   /* 关键事件卡限时（回合数）：每打出一张行动卡 -1；归零强制进入关键事件抉择页（玩家亲选，见 playCard） */
   var KEY_CARD_ROUNDS = 3;
 
-  function Game(data, diffKey, rng) {
+  function Game(data, diffKey, rng, streams) {
     this.d = data;
     this.diffKey = diffKey;
     this.diff = data.DIFFICULTY[diffKey];
     this.rng = rng || Math.random;
+    this._streams = streams || null;   // 按用途注入的随机流（测试用）：{ risk, event, corr, card }
+    this._rngStreams = {};             // 惰性派生的随机流缓存（见 _stream）
     this.resetAll();
   }
+
+  /* 随机流分流（v1.7）：按用途拆流，使险招骰点/际遇/修正不再与发牌共享同一随机序列
+   * （原先前面抽到什么牌会改变后面骰到什么点数，连续"倒霉"无法归因）。
+   * 注入优先（streams[name]）；未注入的流在首次使用时才从主 rng 取一值作种子派生
+   * mulberry32——构造时刻不消耗主流，对既有轨迹扰动最小。
+   * card（发牌）不派生：未注入时回退主 rng，发牌轨迹保持不变。 */
+  Game.prototype._stream = function (name) {
+    if (this._streams && typeof this._streams[name] === 'function') return this._streams[name];
+    if (name === 'card') return this.rng;
+    var s = this._rngStreams[name];
+    if (!s) {
+      s = mulberry32(Math.floor(this.rng() * 4294967296));
+      this._rngStreams[name] = s;
+    }
+    return s;
+  };
 
   Game.prototype.resetAll = function () {
     this.attrs = Object.assign({}, this.d.INIT);
@@ -70,6 +98,7 @@
     this.passedEvents = {};      // 本章已通过（choose 结算后离开）的剧本事件 id 集合（章内进度，GDD 3.3）
     this._chapterStartId = null; // 本章实际起始剧本事件（startAlt 解析后；进度分母口径用）
     this._burned = {};           // 险招失败烧毁的选项（eventId:idx → true，本事件内不可再试，GDD 附录 J）
+    this.xushi = false;          // 蓄势状态（v1.6）：下一次事件抉择险招 +10，抉择后清空
   };
 
   Game.prototype.start = function () { this.enterChapter(0); };
@@ -158,9 +187,10 @@
     return { hardOk: hc.ok === true, hardReason: hc.reason || null, unmet: unmet, rate: rate };
   };
 
-  /* 掷一次骰（1–100）：roll ≤ rate 为成功。引擎内部判定，测试 seeded rng 确定性、浏览器 Math.random。 */
+  /* 掷一次骰（1–100）：roll ≤ rate 为成功。走 risk 流（险招专用，与发牌/际遇互不牵扯）；
+   * 引擎内部判定，测试可经 streams.risk 注入常量骰、浏览器默认惰性派生。 */
   Game.prototype._rollRisk = function (rate, unmet) {
-    var roll = Math.floor(this.rng() * 100) + 1;
+    var roll = Math.floor(this._stream('risk')() * 100) + 1;
     return { rate: rate, roll: roll, success: roll <= rate, unmet: unmet };
   };
 
@@ -305,9 +335,10 @@
       return a.req ? self.checkRisk(a.req, true).hardOk : true;
     });
     var picks = [];
+    var deal = this._stream('card');   // card 流未注入时回退主 rng（发牌轨迹不变）
     var n = Math.min(3, pool.length);
     for (var k = 0; k < n; k++) {
-      var idx = Math.floor(this.rng() * pool.length);
+      var idx = Math.floor(deal() * pool.length);
       picks.push(pool.splice(idx, 1)[0]);
     }
     this.offer = [{ type: 'key' }];
@@ -385,14 +416,18 @@
       r.forcedEnding = true;
       return r;
     }
-    // 回合推进：关键事件卡倒计时 -1；归零则强制进入关键事件抉择页（玩家亲自选择，不再自动循史）
+    return this._advanceRound(r);
+  };
+
+  /* 回合推进（行动卡/蓄势共用）：关键事件卡倒计时 -1；归零则强制进入关键事件抉择页（玩家亲自选择） */
+  Game.prototype._advanceRound = function (r) {
     this.keyRoundsLeft--;
     if (this.keyRoundsLeft <= 0) {
       var opts0 = this.getOptions(), anyOpen = false;
       for (var oi = 0; oi < opts0.length; oi++) if (!opts0[oi].locked) { anyOpen = true; break; }
       if (anyOpen) {
         this.phase = 'event';
-        r.forcedKey = true;   // UI：行动结算浮层「继续」后直接进入关键事件抉择页（renderEvent）
+        r.forcedKey = true;   // UI：结算浮层「继续」后直接进入关键事件抉择页（renderEvent）
         // 成就「时不我待」：首次被倒计时赶上——历史不替你翻页，但会催你翻页
         if (this.unlockAch('shiwodai')) {
           var nm0 = this.d.ACHIEVEMENTS.shiwodai;
@@ -409,6 +444,21 @@
       r.route = { type: 'round' };
     }
     return r;
+  };
+
+  /* 蓄势（v1.6）：放弃本轮出牌，静观其变——下一次事件抉择中的险招成功率 +10（封顶 70），
+   * 每个关键事件限一次；无险招/抉择后即清空。倒计时照常 -1。 */
+  Game.prototype.playXushi = function () {
+    if (this.phase !== 'round' || this.xushi) return null;
+    this.xushi = true;
+    var r = {
+      kind: 'xushi', text: '你按兵不动，把心思都留给了即将到来的那件事。',
+      changes: [], devDelta: 0, achNew: null, bandUp: false, bandName: null,
+      forcedEnding: false, risk: null, failed: false
+    };
+    var forcedEnding = this.checkDeath();
+    if (forcedEnding) { this._next = forcedEnding; this.phase = 'settle'; r.forcedEnding = true; return r; }
+    return this._advanceRound(r);
   };
 
   /* 收益递减：同章第 n 次使用同一行动（n 从 1 计），eff.attrs 中的"收益项"逐次减半、
@@ -479,10 +529,13 @@
     var entry = opts[i];
     if (!entry || entry.locked) return null;
     var o = entry.opt;
+    // 蓄势结算（v1.6）：本次事件抉择生效，随后清空（无险招则落空）
+    var xushiBonus = this.xushi ? 10 : 0;
+    this.xushi = false;
     // 险招掷骰：软门槛未达标，先判定成败（成功与达标同路径；失败烧毁选项、留在本事件改选）
     var risk = null;
     if (entry.risky) {
-      risk = this._rollRisk(entry.risky.rate, entry.risky.unmet);
+      risk = this._rollRisk(Math.min(70, entry.risky.rate + xushiBonus), entry.risky.unmet);
       if (!risk.success) {
         this._burned[this.eventId + ':' + i] = true;
         var fchg = this.applyEff(o.effFail || { attrs: { weiji: 5 } });
@@ -681,15 +734,15 @@
       return { type: 'endEvent', event: this.currentEndEvent };
     }
     this._endEventsChecked = false;
-    // 历史修正
+    // 历史修正（corr 流：触发判定与抽取）
     var band = this.devBand();
     if (band > 0) {
       var pool = this.d.CORRECTIONS.filter(function (c) { return self.dev >= c.minDev && self.dev <= c.maxDev; });
       if (pool.length > 0) {
-        var roll = this.rng();
+        var roll = this._stream('corr')();
         var anyChance = pool.some(function (c) { return roll < c.chance; });
         if (anyChance || band >= 2) {
-          var c = pool[Math.floor(this.rng() * pool.length)];
+          var c = pool[Math.floor(this._stream('corr')() * pool.length)];
           var eff = JSON.parse(JSON.stringify(c.eff));
           if (eff.attrs) Object.keys(eff.attrs).forEach(function (k) { if (k === 'weiji' && eff.attrs[k] > 0) eff.attrs[k] = Math.round(eff.attrs[k] * self.diff.corr); });
           var changes = this.applyEff(eff);
@@ -973,12 +1026,13 @@
   Game.prototype.maybeRandom = function () {
     if (this._skipRandom) { this._skipRandom = false; return null; }
     var inPlay = (this.phase === 'event' || this.phase === 'round');
+    // event 流：际遇触发判定与抽取、危机注入抽取（以下各取值点经 this._stream('event')() 取值）
     // GDD 4.1 危机 70–89：每章确定性注入一次构陷/暗杀际遇（不走概率、不占 randomCount 配额）
     if (this._crisisPlotPending && inPlay && !this.currentRandom) {
       var ppool = (this.d.CRISIS_EVENTS && this.d.CRISIS_EVENTS.plots) || [];
       if (ppool.length > 0) {
         this._crisisPlotPending = false;
-        var pev = ppool[Math.floor(this.rng() * ppool.length)];
+        var pev = ppool[Math.floor(this._stream('event')() * ppool.length)];
         this.pendingEventId = this.eventId;
         this.eventId = pev.id;
         this.currentRandom = pev;
@@ -989,11 +1043,11 @@
     if (!this.randomOn) return null;
     if (!inPlay || this.currentRandom) return null;
     // 逆天段（偏离≥71）：章中随机反噬一次，复用际遇插入机制（GDD 5.2）
-    if (!this._backlashDone && this.devBand() >= 3 && this.rng() < this.randomChance) {
+    if (!this._backlashDone && this.devBand() >= 3 && this._stream('event')() < this.randomChance) {
       this._backlashDone = true;
       var bpool = this.d.CORRECTIONS.filter(function (c) { return c.minDev >= 71; });
       if (bpool.length > 0) {
-        var bc = bpool[Math.floor(this.rng() * bpool.length)];
+        var bc = bpool[Math.floor(this._stream('event')() * bpool.length)];
         var bev = { id: 'BACKLASH', title: bc.title, segs: bc.segs,
           options: [{ t: '咬牙撑住', res: '你挺过了这一波反噬——代价已经付清，路还要继续走。', eff: JSON.parse(JSON.stringify(bc.eff)), to: 'RETURN' }] };
         this.pendingEventId = this.eventId;
@@ -1004,9 +1058,9 @@
       }
     }
     if (this.randomCount >= this.randomMax || this.chapterDeck.length === 0) return null;
-    if (this.rng() >= this.randomChance) return null;
+    if (this._stream('event')() >= this.randomChance) return null;
     // 从章内牌堆抽取（不重复），动态条件不满足则跳过本次
-    var idx = Math.floor(this.rng() * this.chapterDeck.length);
+    var idx = Math.floor(this._stream('event')() * this.chapterDeck.length);
     var ev = this.chapterDeck.splice(idx, 1)[0];
     if (ev.cond && !this.check(ev.cond).ok) return null;
     this.pendingEventId = this.eventId;
