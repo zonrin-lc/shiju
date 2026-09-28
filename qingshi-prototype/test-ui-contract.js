@@ -1,4 +1,4 @@
-/* UI 契约测试（v1.6.2）：跨剧本的引擎侧契约——防 UI 改版回归。
+/* UI 契约测试（v1.6.4）：跨剧本的引擎侧契约——防 UI 改版回归。
  * 覆盖：硬核掷骰标题不泄露数字、回溯清蓄势/险招烧毁、分享卡标题按剧本数据驱动、
  *       全剧本 ACHIEVEMENTS 含 shiwodai（v1.5 被动关键卡后常态触发，缺条目会渲染 undefined）。
  * 运行：node test-ui-contract.js */
@@ -113,6 +113,38 @@ let pass = 0, fail = 0;
     else { fail++; bad.forEach(r => console.log('✘ [' + k + '] 幽灵成就引用：' + r[0] + '（' + r[1] + '）')); if (refs.length === 0) console.log('✘ [' + k + '] 未扫描到任何 ach 引用（扫描器失效？）'); }
   });
   console.log('✔ 成就引用契约：5 剧本全部 ach 引用均有 ACHIEVEMENTS 条目');
+}
+
+/* 7. 回溯次数存档契约（全剧本）：普通难度回溯 1 次后，导出/导入存档仍不可再回溯（防跨会话刷新"每章 1 次"规则） */
+{
+  Object.keys(FILES).forEach(k => {
+    const D = require(FILES[k]);
+    const g = new E.Game(D, 'normal', rngHigh);
+    g.randomOn = false; g.start(); g.beginEvents();
+    const bt = g.backtrack();
+    const locked = g.canBacktrack() === false;
+    const sv = g.exportSave();
+    const g2 = new E.Game(D, 'normal', rngHigh);
+    const ok = sv && g2.importSave(JSON.parse(JSON.stringify(sv))) && g2.canBacktrack() === false && g2.backtracksThisChapter === 1;
+    if (bt && locked && ok) pass++;
+    else { fail++; console.log('✘ [' + k + '] 回溯次数存档契约：bt=' + bt + ' locked=' + locked + ' 恢复后 canBacktrack=' + g2.canBacktrack() + ' count=' + g2.backtracksThisChapter); }
+  });
+  console.log('✔ 回溯次数存档契约：5 剧本回溯后导出/导入，次数不重置');
+}
+
+/* 8. 成就图标契约（全剧本）：ACHIEVEMENTS 每个 id 必须有 assets/ach/ach_<id>.png（防"数据有、图没有"）。
+ * 豁免清单：美术批次未交付项（已在美术资产清单 v0.2 登记、UI 有 onerror/无名目兜底），交付后从豁免中移除。 */
+{
+  const EXEMPT = { xiangyu: ['gai'] };
+  const fs = require('fs');
+  Object.keys(FILES).forEach(k => {
+    const D = require(FILES[k]);
+    const ex = EXEMPT[k] || [];
+    const missing = Object.keys(D.ACHIEVEMENTS).filter(a => ex.indexOf(a) < 0 && !fs.existsSync('assets/ach/ach_' + a + '.png'));
+    if (missing.length === 0) pass++;
+    else { fail++; console.log('✘ [' + k + '] 成就图标缺失（非豁免）：' + missing.join('、')); }
+  });
+  console.log('✔ 成就图标契约：5 剧本 ACHIEVEMENTS 图标齐（豁免：xiangyu/gai 待美术批次）');
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);

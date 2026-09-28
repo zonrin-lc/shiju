@@ -895,7 +895,8 @@
     // currentRandom 是整只事件对象：序列化只存其 id，恢复时按 id 从事件池重建（见 importSave）
     s.currentRandomId = this.snapshot.currentRandom ? this.snapshot.currentRandom.id : null;
     delete s.currentRandom;
-    return { diffKey: this.diffKey, chapterIdx: this.chapterIdx, snapshot: s };
+    return { diffKey: this.diffKey, chapterIdx: this.chapterIdx, snapshot: s,
+             backtracksThisChapter: this.backtracksThisChapter };  // 回溯次数随档保存，防跨会话刷新（GDD 6.4 补注）
   };
 
   // 从 RANDOM / CRISIS 事件池按 id 重建插入事件（BACKLASH 为临时构造对象，不在池中）
@@ -919,7 +920,7 @@
     if (typeof obj.chapterIdx !== 'number' || !this.d.CHAPTERS[obj.chapterIdx]) return false;
     var s = obj.snapshot;
     if (!s || !s.attrs) return false;
-    // 逐项还原章首状态（口径同 backtrack，但不扣回溯系数、不计回溯次数）
+    // 逐项还原章首状态（回溯次数随档恢复；回溯系数 coef 按 GDD 既定口径跨会话重置为 1，不恢复）
     this.chapterIdx = obj.chapterIdx;
     this.attrs = Object.assign({}, s.attrs);
     this.dev = s.dev || 0;
@@ -946,7 +947,8 @@
     if (rid && !rev) { this.eventId = this.pendingEventId || this.eventId; this.pendingEventId = null; }
     this.currentRandom = rev;
     // 章内状态按章首语义重置，并重建本章际遇牌堆（enterChapter 的同款过滤）
-    this.backtracksThisChapter = 0;
+    // 回溯次数从存档恢复（缺失按 0，兼容旧档）——普通难度"每章 1 次"不可经重新载入刷新
+    this.backtracksThisChapter = obj.backtracksThisChapter || 0;
     this.randomCount = 0;
     this.chapterDeck = (this.d.RANDOM_EVENTS || []).filter(function (e) {
       return obj.chapterIdx >= e.chapters[0] && obj.chapterIdx <= e.chapters[1];
