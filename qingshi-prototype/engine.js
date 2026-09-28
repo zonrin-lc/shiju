@@ -769,7 +769,10 @@
 
   Game.prototype.endEventChoose = function (i) {
     var ev = this.currentEndEvent;
-    var o = ev.options[i];
+    var o = ev && ev.options[i];
+    if (!o) return null;
+    // 章末选项门槛由引擎兜底校验（v1.6.2 P1 修复：UI 锁只是展示层，引擎不依赖 UI 防御）
+    if (o.req && !this.check(o.req).ok) return null;
     var changes = this.applyEff(o.eff || {});
     var devDelta0 = (o.eff && o.eff.dev) || 0;
     if (devDelta0 > 0) this.chapterDev.push({ ev: ev.title, t: o.t, dev: devDelta0 });

@@ -1175,6 +1175,21 @@ function expect(name, actual, wantId, wantVariant) {
   } else { fail++; console.log('✘ 掷骰标题异常：normal=' + tN + ' hardcore=' + tH + ' / ' + tHf); }
 }
 
+{
+  // 4. 章末选项门槛（v1.6.2 P1 修复）：cj-tuiyin「上表辞官」req devMax 45——高偏离不可绕过（引擎兜底）
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start();
+  const ev = D.CHAPTERS[4].endEvents.find(e => e.id === 'cj-tuiyin');
+  g.dev = 50; g.currentEndEvent = ev;
+  const r1 = g.endEventChoose(0); // 上表辞官：dev 50 ＞ 45，引擎应拦截
+  const blocked = r1 === null && g.currentEndEvent === ev;
+  g.dev = 40;
+  const r2 = g.endEventChoose(0); // dev 40 ≤ 45，放行
+  if (blocked && r2 && r2.text && r2.text.indexOf('表章') >= 0) {
+    pass++; console.log('✔ 章末选项门槛：偏离＞45 引擎拦截，≤45 正常放行（引擎+UI 双层）');
+  } else { fail++; console.log('✘ 章末选项门槛异常：blocked=' + blocked + ' r2text=' + (r2 && r2.text || '').slice(0, 8)); }
+}
+
 /* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8、zg ≤±5、带 chapters 且每章池 12 ---------- */
 {
   const bad = [];

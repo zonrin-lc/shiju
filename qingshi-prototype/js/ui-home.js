@@ -16,7 +16,7 @@
     clear(main); clear(optBox); overlay.style.display='none';
     main.appendChild(el('div','homeTitle','青史生存录'));
     main.children[0].style.cssText = 'font-size:38px;letter-spacing:9px;margin-top:44px';
-    main.appendChild(el('div','homeSub','如果你来走这一生 ｜ v1.6.2'));
+    main.appendChild(el('div','homeSub','如果你来走这一生 ｜ v' + APP_VERSION));
     main.appendChild(el('div','homeSub','—— 选 择 剧 本 ——'));
     var scenCards = [];
     Object.keys(SCENARIOS).forEach(function(k){

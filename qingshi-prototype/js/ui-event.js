@@ -45,7 +45,7 @@
     var xb = game.xushi ? 10 : 0;
     var eff = Math.min(70, risky.rate + xb);
     var t = game.diff.hideAttrs ? ('成算 '+riskWord(eff)) : ('成功率 '+eff+'%');
-    if (xb) t += '（含蓄势+10）';
+    if (xb) t += game.diff.hideAttrs ? '（蓄势生效）' : '（含蓄势+10）';
     var gaps = risky.unmet.map(function(u){
       return game.diff.hideAttrs ? u.name+'不足' : (u.name+' '+u.have+'/'+u.need);
     }).join('、');
@@ -118,8 +118,11 @@
     main.appendChild(el('div','evTitle', esc(ev.title)));
     revealSegs(ev.segs.map(function(s){ return { cls: 'seg', html: rich(s) }; }), function(){
       ev.options.forEach(function(o, i){
-        var b = el('button','opt', esc(o.t));
-        b.onclick = function(){
+        // 章末选项门槛展示（v1.6.2 P1 修复：与引擎 endEventChoose 的兜底校验同口径）
+        var c = o.req ? game.check(o.req) : { ok: true, reason: null };
+        var b = el('button','opt'+(c.ok ? '' : ' locked'), esc(o.t));
+        if (!c.ok && c.reason) b.appendChild(el('span','lockreason','🔒 '+esc(c.reason)));
+        if (c.ok) b.onclick = function(){
           disableOpts();
           var r = game.endEventChoose(i);
           showSettle('', r.text, r.changes, r.devDelta, null, null, function(){

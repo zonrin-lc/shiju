@@ -60,5 +60,15 @@ let pass = 0, fail = 0;
   console.log('✔ 成就契约：5 剧本 ACHIEVEMENTS 均含「时不我待」');
 }
 
+/* 5. 版本同步契约：js/ui-core.js 的 APP_VERSION 必须与 package.json version 一致（防首页版本号再次漂移） */
+{
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+  const core = fs.readFileSync('./js/ui-core.js', 'utf8');
+  const m = core.match(/APP_VERSION = '([^']+)'/);
+  if (m && m[1] === pkg.version) { pass++; console.log('✔ 版本同步契约：APP_VERSION ' + m[1] + ' = package.json ' + pkg.version); }
+  else { fail++; console.log('✘ 版本漂移：APP_VERSION=' + (m && m[1]) + ' package.json=' + pkg.version); }
+}
+
 console.log(`\n结果：${pass} 通过，${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);
