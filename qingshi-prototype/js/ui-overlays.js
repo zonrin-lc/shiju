@@ -88,7 +88,7 @@
       if (game.ach.length===0) al.innerHTML = '<span style="opacity:.4;border:none">尚未解锁</span>';
       game.ach.forEach(function(a){
         var s = el('span','');
-        s.innerHTML = '<img class="achIcon" src="assets/ach/ach_'+a+'.png" alt="">'+esc(game.d.ACHIEVEMENTS[a]);
+        s.innerHTML = '<img class="achIcon" src="assets/ach/ach_'+a+'.png" alt="" onerror="this.style.display=\'none\'">'+esc(game.d.ACHIEVEMENTS[a]||a);
         al.appendChild(s);
       });
     } else {
