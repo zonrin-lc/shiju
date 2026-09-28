@@ -178,5 +178,9 @@
       document.getElementById('shareDl').href = url;
       document.getElementById('shareDl').download = '青史生存录-' + en.name + '.png';
       document.getElementById('shareMask').className = 'open';
-    } catch(e){}
+    } catch(e){
+      // 分享卡生成失败不静默（v1.6.2）：canvas/资源异常时给玩家可见反馈
+      console.error('分享卡生成失败', e);
+      showSettle('', '分享卡生成失败，请重试。', [], 0, null, null, function(){});
+    }
   }

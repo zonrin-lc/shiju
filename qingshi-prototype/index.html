@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>青史生存录 · 仓鼠之局（原型）</title>
+<title>青史生存录</title>
 <style>
   :root{
     --bg:#17140f; --panel:#221d15; --panel2:#2a241a; --ink:#e8dfc8; --ink-dim:#a89a7c;
@@ -11,13 +11,13 @@
     --line:#3a3226;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
+  html,body{height:100%; height:100dvh}
   body{
     background:#0d0b08; color:var(--ink);
     font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
     display:flex; justify-content:center; overflow:hidden;
   }
-  #app{width:100%; max-width:480px; height:100%; background:var(--bg); position:relative;
+  #app{width:100%; max-width:480px; height:100%; height:100dvh; background:var(--bg); position:relative;
     display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,.8);}
 
   /* 顶部状态栏 */
