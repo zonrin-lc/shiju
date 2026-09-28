@@ -24,7 +24,14 @@
   #topbar{padding:10px 14px 8px; border-bottom:1px solid var(--line); background:var(--panel); flex:none}
   #topbar .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
   #chapTitle{font-size:13px; color:var(--ink-dim); letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  #menuBtns{display:flex; gap:6px}
+  #menuBtns{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+  /* 小屏（360–420px）：顶栏允许换行，按钮收紧，章节名整行 */
+  @media (max-width:420px){
+    #topbar{padding:8px 10px 6px}
+    #topbar .row{flex-wrap:wrap; gap:6px}
+    #chapTitle{max-width:100%; font-size:12px}
+    .iconbtn{font-size:11px; padding:3px 7px}
+  }
   .iconbtn{background:none; border:1px solid var(--line); color:var(--ink-dim); font-size:12px;
     padding:3px 9px; border-radius:3px; cursor:pointer; font-family:inherit}
   .iconbtn:active{background:var(--panel2)}
@@ -89,7 +96,7 @@
   .cardLock{font-size:11px; color:var(--zhu); margin-top:5px}
 
   /* 底部选项区 */
-  #options{flex:none; padding:12px 16px 18px; border-top:1px solid var(--line); background:var(--panel)}
+  #options{flex:none; max-height:42vh; overflow-y:auto; scrollbar-width:thin; padding:12px 16px 18px; border-top:1px solid var(--line); background:var(--panel)}
   .opt{display:block; width:100%; text-align:left; background:var(--panel2); border:1px solid var(--line);
     color:var(--ink); padding:13px 15px; margin:8px 0; border-radius:3px; font-size:15px; line-height:1.6;
     cursor:pointer; font-family:inherit; position:relative; transition:border-color .15s}
@@ -318,6 +325,9 @@
   }
   function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); if (n === main) cancelReveal(); }
 
+  /* 防连点：点击即禁用当前选项区全部按钮（下一次渲染会重建新按钮，无需解锁） */
+  function disableOpts(){ var bs = optBox.querySelectorAll('button'); for (var i = 0; i < bs.length; i++) bs[i].disabled = true; }
+
   /* ---------- 叙事逐句渐显（v1.5）：文本从底部区域一句一句出现；点击正文区（非词条/立绘/按钮）速显全部 ---------- */
   var SEG_DELAY = 650;   // 每句间隔（ms）
   var revealing = null;  // 进行中的渐显 {cancel}
@@ -466,7 +476,7 @@
     if (sv){
       var SD = SCENARIOS[selScen];
       var svdf = SD.DIFFICULTY[sv.diffKey], svch = SD.CHAPTERS[sv.chapterIdx];
-      var svLabel = '继 续';
+      var svLabel = '继 续 · 本章开局';
       if (svdf && svch) svLabel += '（'+svdf.n+' · '+svch.title.split('｜')[0].trim()+'）';
       var cont = el('button','ghostBtn', esc(svLabel));
       cont.onclick = function(){
@@ -519,7 +529,7 @@
     if (fromBt) items0.push({ cls: 'noteSeg', html: '【回溯】你回到了本章开头。偏离度与已解锁的成就、图鉴不会重置——做过的事，史书都记着。' });
     revealSegs(items0, function(){
       var btn = el('button','contBtn','继 续');
-      btn.onclick = function(){ handleRoute(game.beginEvents()); };   // beginEvents = beginRounds 别名 → {type:'round'}
+      btn.onclick = function(){ disableOpts(); handleRoute(game.beginEvents()); };   // beginEvents = beginRounds 别名 → {type:'round'}
       optBox.appendChild(btn);
       speakMain();
     });
@@ -567,6 +577,7 @@
 
   /* ---------- 出牌 ---------- */
   function doPlayCard(i){
+    disableOpts();
     var r = game.playCard(i);
     if (!r) return;
     if (r.kind === 'key'){ renderEvent(); return; }   // 关键事件卡 → 现有事件决策流
@@ -622,6 +633,7 @@
 
   /* ---------- 结算 ---------- */
   function doChoose(i){
+    disableOpts();
     var r = game.choose(i);
     if (!r) return;
     lastSettleText = r.text;
@@ -751,6 +763,7 @@
       ev.options.forEach(function(o, i){
         var b = el('button','opt', esc(o.t));
         b.onclick = function(){
+          disableOpts();
           var r = game.endEventChoose(i);
           showSettle('', r.text, r.changes, r.devDelta, null, null, function(){
             var n = game.proceedAfterEndEvent();

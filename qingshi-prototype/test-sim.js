@@ -966,13 +966,13 @@ function expect(name, actual, wantId, wantVariant) {
   } else { fail++; console.log('✘ 亲选推进异常：eventId=' + g.eventId + ' phase=' + g.phase + ' route=' + JSON.stringify(rt && rt.type)); }
 }
 
-/* ---------- 45. hist 未达标转险招时强制抉择：事件页 hist 选项变险招（15%），玩家亲选无门槛项（6-3 才学不足→「不写了」） ---------- */
+/* ---------- 45. hist 未达标转险招时强制抉择：事件页 hist 选项变险招（史实升一档 20%），玩家亲选无门槛项（6-3 才学不足→「不写了」） ---------- */
 {
   const g = new E.Game(D, 'normal', rngHigh);
   g.randomOn = false; g.start();
   g.enterChapter(6);
   g.eventId = '6-3';
-  g.attrs.caixue = 30; // 「狱中上书」（hist）需才学 60 → 险招（差 21 → 15%）
+  g.attrs.caixue = 30; // 「狱中上书」（hist）需才学 60 → 险招（差 21 → 基档 15%，史实升一档 20%）
   g.beginRounds();
   let r = null;
   for (let k = 0; k < 3; k++) {
@@ -980,10 +980,10 @@ function expect(name, actual, wantId, wantVariant) {
     r = g.playCard(1);
   }
   const opts63 = g.getOptions();
-  const histRisky = opts63[0].risky && opts63[0].risky.rate === 15; // options[0] = hist「狱中上书」转险招 15%
+  const histRisky = opts63[0].risky && opts63[0].risky.rate === 20; // options[0] = hist「狱中上书」转险招（史实升档 15→20%）
   if (r.forcedKey === true && g.phase === 'event' && g.eventId === '6-3' && histRisky && !opts63[1].locked && !opts63[1].risky) {
-    pass++; console.log('✔ 强制抉择（hist 未达标转险招 15%）：停在 6-3 事件页，玩家须亲选');
-  } else { fail++; console.log('✘ 强制抉择（hist 险招）异常：eventId=' + g.eventId + ' phase=' + g.phase + ' histRisky=' + histRisky); }
+    pass++; console.log('✔ 强制抉择（hist 险招史实升一档 20%）：停在 6-3 事件页，玩家须亲选');
+  } else { fail++; console.log('✘ 强制抉择（hist 险招）异常：eventId=' + g.eventId + ' phase=' + g.phase + ' rate=' + (opts63[0].risky && opts63[0].risky.rate)); }
   g.choose(1);
   const rt63 = g.proceed();
   if (g.eventId === '6-4' && rt63) {
@@ -1010,20 +1010,20 @@ function expect(name, actual, wantId, wantVariant) {
 }
 
 {
-  // 3. 选项险招·成功：6-3「狱中上书」需才学 60，才学 55（差 5 → 50%），roll 31 ≤ 50 正常结算推进
+  // 3. 选项险招·成功：6-3「狱中上书」（hist）需才学 60，才学 55（差 5 → 基档 50%，史实升一档 70%），roll 31 ≤ 70 正常结算推进
   const g = new E.Game(D, 'normal', () => 0.3);
   g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
   g.attrs.caixue = 55; g.beginRounds(); g.playCard(0);
   const opts = g.getOptions();
   const r = g.choose(0);
   const rt = (r && !r.failed) ? g.proceed() : null;
-  if (opts[0].risky && opts[0].risky.rate === 50 && r && !r.failed && r.risk.success && r.risk.roll === 31
-    && g.eventId === '6-4' && g.phase === 'round') { pass++; console.log('✔ 险招成功：roll 31 ≤ 50，「狱中上书」正常结算推进 6-4'); }
+  if (opts[0].risky && opts[0].risky.rate === 70 && r && !r.failed && r.risk.success && r.risk.roll === 31
+    && g.eventId === '6-4' && g.phase === 'round') { pass++; console.log('✔ 险招成功：roll 31 ≤ 70（史实升档），「狱中上书」正常结算推进 6-4'); }
   else { fail++; console.log('✘ 险招成功路径异常：' + JSON.stringify({ rate: opts[0].risky && opts[0].risky.rate, failed: r && r.failed, ev: g.eventId, phase: g.phase })); }
 }
 
 {
-  // 4. 选项险招·失败：roll 81 ＞ 50 → 危机+5、选项烧毁（已试，事未谐）、留在本事件改选
+  // 4. 选项险招·失败：roll 81 ＞ 70（史实升档后）→ 危机+5、选项烧毁（已试，事未谐）、留在本事件改选
   const g = new E.Game(D, 'normal', () => 0.8);
   g.randomOn = false; g.start(); g.enterChapter(6); g.eventId = '6-3';
   g.attrs.caixue = 55; const wj0 = g.attrs.weiji; g.beginRounds(); g.playCard(0);
@@ -1033,7 +1033,7 @@ function expect(name, actual, wantId, wantVariant) {
     && g.attrs.weiji === wj0 + 5
     && opts2[0].locked === true && opts2[0].reason === '已试，事未谐';
   g.choose(1); g.proceed(); // 改选「不写了」正常推进
-  if (failOk && g.eventId === '6-4') { pass++; console.log('✔ 险招失败：roll 81 ＞ 50，危机+5、选项烧毁，改选「不写了」推进 6-4'); }
+  if (failOk && g.eventId === '6-4') { pass++; console.log('✔ 险招失败：roll 81 ＞ 70，危机+5、选项烧毁，改选「不写了」推进 6-4'); }
   else { fail++; console.log('✘ 险招失败路径异常：' + JSON.stringify({ failed: r && r.failed, roll: r && r.risk.roll, phase: g.phase, ev: g.eventId })); }
 }
 

@@ -4,7 +4,7 @@
  *   准则 5：每剧本 ≥3 条通关路线（苟活 E2/E3、稳健 E4/E5、逆天 E6/E7 均应可达）
  *   准则 1：无万能最优选项（代理指标：各策略平均总分差、关键节点选项收益差）
  *   准则 2：历史惯性（代理指标：激进偏离策略的死亡率 vs 史实策略）
- * 运行：node balance-sim.js [--games 1000] [--seed 42] [--diff normal] [--scenario lisi|jingke] [--out report.json]
+ * 运行：node balance-sim.js [--games 1000] [--seed 42] [--seeds 10] [--diff normal] [--scenario lisi|jingke] [--out report.json]
  */
 function arg(name, def) {
   const i = process.argv.indexOf('--' + name);
@@ -28,6 +28,7 @@ function mulberry32(a) {
 
 const GAMES = parseInt(arg('games', '1000'), 10);
 const SEED = parseInt(arg('seed', '42'), 10);
+const SEEDS = Math.max(1, parseInt(arg('seeds', '1'), 10)); // 多 seed 扫描：--seeds N（N>1 时每策略总局数 = GAMES×N，可复现性由 SEED 派生保持）
 const DIFF = arg('diff', 'normal');
 const OUT = arg('out', null);
 
@@ -295,25 +296,27 @@ const t0 = Date.now();
 stratNames.forEach((sn, si) => {
   stats[sn] = { games: 0, clear: 0, clearB: 0, sumTotal: 0, sumDev: 0, sumChapter: 0, endings: {}, variants: {}, grades: {}, sumAttrs: {} };
   keyNodeStats[sn] = {};
-  for (let i = 0; i < GAMES; i++) {
-    const rng = mulberry32(SEED + si * 1000003 + i);
-    let r;
-    try { r = playOne(sn, DIFF, rng); }
-    catch (e) { errors.push(sn + ' #' + i + ': ' + e.message); continue; }
-    const s = stats[sn];
-    s.games++;
-    if (r.ending !== 'E8') { s.clear++; if (r.grade === 'S' || r.grade === 'A' || r.grade === 'B') s.clearB++; }
-    s.sumTotal += r.total; s.sumDev += r.dev; s.sumChapter += r.chapter;
-    s.endings[r.ending] = (s.endings[r.ending] || 0) + 1;
-    const v = r.ending + (r.variant ? '/' + r.variant : '');
-    s.variants[v] = (s.variants[v] || 0) + 1;
-    s.grades[r.grade] = (s.grades[r.grade] || 0) + 1;
-    Object.keys(r.attrs).forEach(k => { s.sumAttrs[k] = (s.sumAttrs[k] || 0) + r.attrs[k]; });
-    r.keyPicks.forEach(([node, t]) => {
-      const ns = keyNodeStats[sn][node] = keyNodeStats[sn][node] || {};
-      const os = ns[t] = ns[t] || { n: 0, sumTotal: 0 };
-      os.n++; os.sumTotal += r.total;
-    });
+  for (let s = 0; s < SEEDS; s++) {
+    for (let i = 0; i < GAMES; i++) {
+      const rng = mulberry32(SEED + s * 10000019 + si * 1000003 + i);
+      let r;
+      try { r = playOne(sn, DIFF, rng); }
+      catch (e) { errors.push(sn + ' #' + s + ':' + i + ': ' + e.message); continue; }
+      const st = stats[sn];
+      st.games++;
+      if (r.ending !== 'E8') { st.clear++; if (r.grade === 'S' || r.grade === 'A' || r.grade === 'B') st.clearB++; }
+      st.sumTotal += r.total; st.sumDev += r.dev; st.sumChapter += r.chapter;
+      st.endings[r.ending] = (st.endings[r.ending] || 0) + 1;
+      const v = r.ending + (r.variant ? '/' + r.variant : '');
+      st.variants[v] = (st.variants[v] || 0) + 1;
+      st.grades[r.grade] = (st.grades[r.grade] || 0) + 1;
+      Object.keys(r.attrs).forEach(k => { st.sumAttrs[k] = (st.sumAttrs[k] || 0) + r.attrs[k]; });
+      r.keyPicks.forEach(([node, t]) => {
+        const ns = keyNodeStats[sn][node] = keyNodeStats[sn][node] || {};
+        const os = ns[t] = ns[t] || { n: 0, sumTotal: 0 };
+        os.n++; os.sumTotal += r.total;
+      });
+    }
   }
 });
 
@@ -323,7 +326,7 @@ const safeDiv = (a, b) => b ? a / b : 0;
 const lines = [];
 function log(s) { lines.push(s); console.log(s); }
 
-log(`== 批量平衡模拟 ｜ 难度 ${DIFF} ｜ 每策略 ${GAMES} 局 ｜ 种子 ${SEED} ｜ 耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s ==`);
+log(`== 批量平衡模拟 ｜ 难度 ${DIFF} ｜ 每策略 ${GAMES}${SEEDS > 1 ? '×' + SEEDS + 'seed' : ''} 局 ｜ 种子 ${SEED} ｜ 耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s ==`);
 log('注：总分含难度系数（剧情 ×0.8 / 普通 ×1.0 / 硬核 ×1.25），跨难度比较分数与评级无意义，仅同难度内比较。');
 if (errors.length) log(`!! 引擎异常 ${errors.length} 起（详见 JSON 报告）`);
 
@@ -388,7 +391,7 @@ stratNames.forEach(sn => {
 });
 
 if (OUT) {
-  require('fs').writeFileSync(OUT, JSON.stringify({ games: GAMES, seed: SEED, diff: DIFF, stats, keyNodeStats, errors }, null, 2));
+  require('fs').writeFileSync(OUT, JSON.stringify({ games: GAMES, seeds: SEEDS, seed: SEED, diff: DIFF, stats, keyNodeStats, errors }, null, 2));
   console.log('\n明细已写入 ' + OUT);
 }
 process.exit(errors.length > 0 ? 1 : 0);

@@ -133,6 +133,12 @@
     if (gap <= 12) return 30; if (gap <= 15) return 20; return 15;
   };
 
+  /* 史实（hist）选项险招成功率升一档（v1.5.1）：历史惯性体——赌的是"改变历史"，少赌"成为历史" */
+  Game.prototype.riskRateHist = function (rate) {
+    if (rate >= 50) return 70; if (rate >= 40) return 50; if (rate >= 30) return 40;
+    if (rate >= 20) return 30; return 20;
+  };
+
   /* 分类 req：hardOk/hardReason（硬键判定）+ unmet（未达标软键明细）+ rate（综合成功率，无软缺口为 null） */
   Game.prototype.checkRisk = function (req, actionHardCaifu) {
     var self = this, names = this.d.ATTR_NAMES;
@@ -460,7 +466,7 @@
       } else if (req) {
         var cr = self.checkRisk(req, false);
         if (!cr.hardOk) { locked = true; reason = cr.hardReason; }
-        else if (cr.rate != null) risky = { rate: cr.rate, unmet: cr.unmet };
+        else if (cr.rate != null) risky = { rate: o.hist ? self.riskRateHist(cr.rate) : cr.rate, unmet: cr.unmet };
       }
       return { opt: o, locked: locked, reason: reason, hist: !!o.hist, risky: risky };
     });
