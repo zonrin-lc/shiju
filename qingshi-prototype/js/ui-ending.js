@@ -148,7 +148,7 @@
     else { x.fillStyle = '#17140f'; x.fillRect(0, 0, W, H); }
     x.textAlign = 'center';
     x.fillStyle = '#a89a7c'; x.font = '16px ' + SERIF;
-    x.fillText('青史生存录 · 李斯「仓鼠之局」', W / 2, 66);
+    x.fillText('青史生存录 · ' + String(game.d.SCENARIO.name || '').replace(' · ', '「') + '」', W / 2, 66);
     x.fillStyle = '#e8dfc8'; x.font = 'bold 42px ' + SERIF;
     x.fillText(en.name, W / 2, 132);
     x.fillStyle = '#b0432f'; x.font = '17px ' + SERIF;

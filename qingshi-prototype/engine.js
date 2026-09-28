@@ -194,6 +194,16 @@
     return { rate: rate, roll: roll, success: roll <= rate, unmet: unmet };
   };
 
+  /* 掷骰结算标题（v1.6.1）：普通/剧情显示点数与成功率；硬核只显档位词（隐藏数值口径，GDD 4.4） */
+  Game.prototype.riskTitle = function (r) {
+    if (!r || !r.risk) return '';
+    var rk = r.risk;
+    var word = rk.rate >= 70 ? '七成' : rk.rate >= 50 ? '五成' : rk.rate >= 40 ? '四成' : rk.rate >= 30 ? '三成' : rk.rate >= 20 ? '二成' : '一成五';
+    var res = rk.success ? ' · 成' : ' · 败';
+    if (this.diff.hideAttrs) return '🎲 成算' + word + res;
+    return '🎲 掷骰 ' + rk.roll + (rk.success ? ' ≤ ' : ' ＞ ') + rk.rate + res;
+  };
+
   /* ---------- 进入章节 ---------- */
   Game.prototype.enterChapter = function (idx) {
     this.chapterIdx = idx;
@@ -854,6 +864,9 @@
     this.keyRoundsLeft = s.keyRoundsLeft != null ? s.keyRoundsLeft : KEY_CARD_ROUNDS;
     this.actionUses = Object.assign({}, s.actionUses || {});
     this.passedEvents = Object.assign({}, s.passed || {});
+    // 时间线重写：蓄势与险招烧毁属上一条时间线的决策痕迹，不随回溯穿越（v1.6.1 P0 修复）
+    this.xushi = false;
+    this._burned = {};
     this.offer = null;
     this.backtracksThisChapter++;
     this.coef = Math.round(this.coef * 0.98 * 100) / 100;

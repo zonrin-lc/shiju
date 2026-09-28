@@ -128,6 +128,9 @@ const STRATEGIES = {
   },
 };
 const ATTR_STRATS = ['quanshi', 'shengwang', 'junxin', 'caifu', 'caixue', 'survive'];
+/* xushi 策略（v1.6.1）：每个关键事件先蓄势一次（round 阶段返回 -1 由 playOne 特判调 playXushi），
+ * 事件抉择与已蓄势后的选卡均按 survive 求生打分——用于检验"永远蓄势"的收益曲线。 */
+STRATEGIES.xushi = STRATEGIES.survive;
 
 /* ---------- round 阶段选卡（行动卡回合制） ----------
  * 打分函数统一作用于 eff（事件选项与行动卡同口径）；关键卡估值 = 当前事件各未锁定选项中该策略的最优值 */
@@ -144,6 +147,8 @@ const EFF_SCORE = {
 function pickCard(stratName, g, rng) {
   const offer = g.getOffer();
   if (stratName === 'hist') return 0; // 关键卡在则点关键卡（事件内照 hist 逻辑）
+  if (stratName === 'xushi' && !g.xushi) return -1; // 蓄势策略：每个关键事件先蓄势（playOne 特判）
+  if (stratName === 'xushi') stratName = 'survive'; // 已蓄势则按求生打分
   if (stratName === 'random') {
     const cand = [0]; // 4 张卡均匀随机（跳过锁定行动卡）
     for (let i = 1; i < offer.length; i++) if (!offer[i].locked) cand.push(i);
@@ -241,6 +246,12 @@ function playOne(stratName, diffKey, rng) {
     if (g.phase === 'intro') { g.beginEvents(); continue; }
     if (g.phase === 'round') {
       const ci = pickCard(stratName, g, rng);
+      if (ci === -1) { // 蓄势策略：放弃出牌（playXushi 内部照常推进倒计时与 forcedKey）
+        const rx = g.playXushi();
+        if (!rx) { g.playCard(0); continue; }
+        decisions++;
+        continue;
+      }
       const r = g.playCard(ci);
       if (!r) { g.playCard(0); continue; } // 兜底：锁定等异常直接点关键卡
       decisions++;

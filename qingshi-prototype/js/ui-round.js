@@ -63,7 +63,7 @@
     if (r.kind === 'key'){ renderEvent(); return; }   // 关键事件卡 → 现有事件决策流
     // 行动卡：先弹行动结算
     lastSettleText = r.text;
-    var actTitle = r.risk ? ('🎲 掷骰 '+r.risk.roll+(r.failed?' ＞ ':' ≤ ')+r.risk.rate+(r.failed?' · 败':' · 成')) : '行动';
+    var actTitle = r.risk ? game.riskTitle(r) : '行动';
     showSettle(actTitle, r.text, r.changes, r.devDelta, r.achNew, null, function(){
       if (r.forcedEnding){ handleRoute(game.proceed()); return; }   // 行动致死：phase='settle'，需再 proceed 收束
       if (r.forcedKey){ renderEvent(); return; }   // 倒计时归零：强制进入关键事件，玩家亲自抉择

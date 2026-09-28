@@ -1126,6 +1126,55 @@ function expect(name, actual, wantId, wantVariant) {
   } else { fail++; console.log('✘ 蓄势归零异常：' + JSON.stringify({ fk: r && r.forcedKey, phase: g.phase })); }
 }
 
+/* ---------- 45d. 回溯状态穿越修复（v1.6.1 P0）：蓄势与险招烧毁不随回溯穿越；硬核掷骰标题不泄露数字 ---------- */
+{
+  // 1. 蓄势后回溯：xushi 清空，可重新蓄势
+  const g = new E.Game(D, 'normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  g.playXushi();
+  const xBefore = g.xushi;
+  g.backtrack();
+  const xAfterBt = g.xushi;   // 回溯后立即检查：应为 false
+  g.beginEvents();
+  const rAgain = g.playXushi();
+  if (xBefore === true && xAfterBt === false && rAgain && rAgain.kind === 'xushi') {
+    pass++; console.log('✔ 回溯清蓄势：backtrack 后 xushi=false，可重新蓄势');
+  } else { fail++; console.log('✘ 回溯蓄势穿越：before=' + xBefore + ' after=' + g.xushi); }
+}
+
+{
+  // 2. 险招烧毁后回溯：_burned 清空，同一选项不再显示「已试，事未谐」
+  const g = new E.Game(D, 'normal', () => 0.8, { risk: () => 0.8 });
+  g.randomOn = false; g.start();
+  g.enterChapter(6); g.eventId = '6-3'; g.attrs.caixue = 55;
+  g.beginRounds(); g.playCard(0);
+  const r = g.choose(0); // hist 狱中上书 roll 81 ＞ 70 失败烧毁
+  const burnedBefore = r && r.failed === true && g.getOptions()[0].locked === true;
+  g.backtrack();
+  g.beginEvents();
+  g.eventId = '6-3'; g.beginRounds(); g.playCard(0);
+  const optsAfter = g.getOptions();
+  const cleared = Object.keys(g._burned).length === 0 && !optsAfter[0].locked && optsAfter[0].reason !== '已试，事未谐';
+  if (burnedBefore && cleared) {
+    pass++; console.log('✔ 回溯清烧毁：backtrack 后 _burned 清空，险招选项恢复可试');
+  } else { fail++; console.log('✘ 回溯烧毁穿越：burnedBefore=' + burnedBefore + ' cleared=' + cleared); }
+}
+
+{
+  // 3. 掷骰标题口径：普通显示点数与成功率；硬核只显档位词（无数字、无百分号）
+  const mk = (diff) => { const g = new E.Game(D, diff, rngHigh); return g; };
+  const fake = (rate, roll, success) => ({ risk: { rate: rate, roll: roll, success: success, unmet: [] } });
+  const tN = mk('normal').riskTitle(fake(50, 31, true));
+  const tH = mk('hardcore').riskTitle(fake(50, 31, true));
+  const tHf = mk('hardcore').riskTitle(fake(30, 81, false));
+  const digits = /\d|%/;
+  if (tN.indexOf('31') >= 0 && tN.indexOf('50') >= 0 && tN.indexOf('掷骰') >= 0
+    && !digits.test(tH) && tH.indexOf('成算五成') >= 0
+    && !digits.test(tHf) && tHf.indexOf('成算三成') >= 0 && tHf.indexOf('败') >= 0) {
+    pass++; console.log('✔ 掷骰标题：普通含点数/成功率，硬核只显档位词（' + tH + ' / ' + tHf + '）');
+  } else { fail++; console.log('✘ 掷骰标题异常：normal=' + tN + ' hardcore=' + tH + ' / ' + tHf); }
+}
+
 /* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8、zg ≤±5、带 chapters 且每章池 12 ---------- */
 {
   const bad = [];

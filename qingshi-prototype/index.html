@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>青史生存录 · 仓鼠之局（原型）</title>
 <style>
   :root{
@@ -65,6 +65,8 @@
   /* 章首 */
   .chapKicker{font-size:12px; color:var(--zhu); letter-spacing:3px; margin-bottom:10px}
   .chapHead{font-size:24px; letter-spacing:3px; margin-bottom:22px}
+  .chapHead::after{content:''; display:block; height:10px; margin-top:10px; background:url('assets/orn/orn_yunlei.png') left center/64px 8px repeat-x; opacity:.45}
+  .scoreHead::after{content:''; display:block; height:10px; margin-top:6px; background:url('assets/orn/orn_yunlei.png') left center/64px 8px repeat-x; opacity:.4}
   .seg{font-size:16px; line-height:2.15; margin-bottom:18px; text-align:justify; animation:segIn .5s ease both}
   @keyframes segIn{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
   .noteSeg{font-size:13px; line-height:1.9; color:var(--gold); border-left:2px solid var(--gold); padding-left:12px; margin-bottom:18px; animation:segIn .5s ease both}
@@ -106,6 +108,7 @@
   .opt .lockreason{display:block; font-size:11px; color:var(--zhu); margin-top:4px}
   .opt.risky{border-color:var(--orange); background:#2b2114}
   .opt .riskline{display:block; font-size:11px; color:var(--orange); margin-top:4px}
+  .optTeach{font-size:12px; color:var(--gold); line-height:1.8; border:1px dashed var(--gold); padding:8px 12px; margin:8px 0; animation:segIn .5s ease both}
   .card.risky{border-color:var(--orange); background:#2b2114}
   .card .riskline{display:block; font-size:11px; color:var(--orange); margin-top:4px}
   .card.xushi{border-style:dashed; border-color:var(--qing); background:#1c211f}
@@ -116,7 +119,7 @@
 
   /* 结算浮层 */
   #overlay{position:absolute; inset:0; background:rgba(10,8,5,.82); display:flex; align-items:flex-end; z-index:20}
-  #settleCard{width:100%; background:var(--panel); border-top:2px solid var(--gold); padding:22px 22px 20px; animation:up .35s ease both}
+  #settleCard{width:100%; max-height:86vh; overflow-y:auto; scrollbar-width:thin; background:var(--panel); border-top:2px solid var(--gold); padding:22px 22px calc(20px + env(safe-area-inset-bottom, 0px)); animation:up .35s ease both}
   @keyframes up{from{transform:translateY(40px); opacity:0}to{transform:none; opacity:1}}
   #settleText{font-size:15px; line-height:2.05; text-align:justify; margin-bottom:16px}
   .chg{font-size:14px; margin:5px 0; animation:segIn .3s ease both}

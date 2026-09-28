@@ -23,7 +23,7 @@
       var sc = SCENARIOS[k].SCENARIO;
       var c = el('div','diffCard'+(k===selScen?' sel':''),
         '<div class="dn">'+sc.name+'</div><div class="dd">'+sc.era+' ｜ '+sc.desc+'<br>'+sc.recommend+'</div>');
-      var bgMap = {jingke:'assets/bg/bg_card_jingke.jpg',hanxin:'assets/bg/bg_card_hanxin.jpg',xiangyu:'assets/bg/bg_card_xiangyu.jpg',chensheng:'assets/bg/bg_card_chensheng.jpg'};
+      var bgMap = {lisi:'assets/bg/bg_home_hero.jpg',jingke:'assets/bg/bg_card_jingke.jpg',hanxin:'assets/bg/bg_card_hanxin.jpg',xiangyu:'assets/bg/bg_card_xiangyu.jpg',chensheng:'assets/bg/bg_card_chensheng.jpg'};
       if (bgMap[k]){ c.style.backgroundImage='linear-gradient(rgba(23,20,15,.80),rgba(23,20,15,.90)),url("'+bgMap[k]+'")'; c.style.backgroundSize='cover'; c.style.backgroundPosition='center'; }
       c.onclick = function(){ selScen=k; scenCards.forEach(function(x){x.el.className='diffCard';}); c.className='diffCard sel'; renderHome(); };
       scenCards.push({el:c,k:k}); main.appendChild(c);

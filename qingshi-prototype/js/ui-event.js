@@ -55,6 +55,11 @@
   function renderOptions(){
     clear(optBox);
     var opts = game.getOptions();
+    // 一次性教学：首次出现「史实选项变险招」时提示——史实选择不保证史实结果（v1.6.1）
+    if (!game._taughtHistRisk && opts.some(function(o){ return o.hist && o.risky; })){
+      game._taughtHistRisk = true;
+      optBox.appendChild(el('div','optTeach','史实选择并不保证史实结果——你继承了他的选择，却没有继承他当时的条件。'));
+    }
     opts.forEach(function(o, i){
       var b = el('button','opt'+(o.locked?' locked':'')+(o.risky?' risky':''), esc(o.opt.t));
       if (o.hist) b.appendChild(el('span','histmark','史'));
@@ -71,7 +76,7 @@
     var r = game.choose(i);
     if (!r) return;
     lastSettleText = r.text;
-    var title = r.risk ? ('🎲 掷骰 '+r.risk.roll+(r.risk.success?' ≤ ':' ＞ ')+r.risk.rate+(r.risk.success?' · 成':' · 败')) : '';
+    var title = r.risk ? game.riskTitle(r) : '';
     showSettle(title, r.text, r.changes, r.devDelta, r.achNew, r.bandUp ? r.bandName : null, function(){
       if (r.failed){
         if (r.forcedEnding){ routeAfter(); return; }   // 险招失败且惩罚致死：走结局收束
