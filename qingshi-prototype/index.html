@@ -157,13 +157,25 @@
   #totalLine{display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; padding-top:12px; border-top:1px solid var(--line)}
   #totalScore{font-size:30px; color:var(--gold)}
   #gradeBadge{font-size:30px; color:var(--zhu); border:2px solid var(--zhu); width:58px; height:58px; display:flex; align-items:center; justify-content:center; border-radius:50%}
-  /* 主页美术接入（v1.7，仅主页）：书法标题/入局笔刷按钮/底部竹简装饰 */
+  /* 主页美术接入：书法标题/入局笔刷（v1.6.6）；效果图还原（v1.6.7） */
   .homeTitleImg{display:flex; justify-content:center; margin:44px 0 4px}
   .homeTitleImg img{width:78%; max-width:340px}
   .startImgBtn{display:block; width:78%; max-width:300px; margin:14px auto 4px; background:none; border:none; padding:0; cursor:pointer}
   .startImgBtn img{width:100%; display:block}
-  .homeDeco{margin-top:14px; pointer-events:none; opacity:.85}
-  .homeDeco img{width:100%; display:block}
+  .homeDivider{display:flex; align-items:center; justify-content:center; gap:10px; margin:16px 0 10px; color:var(--ink-dim); font-size:13px; letter-spacing:4px}
+  .homeDivider img{height:9px; width:70px; object-fit:fill; opacity:.8}
+  .homeDivider img.r{transform:scaleX(-1)}
+  .scenRow{display:flex; gap:6px}
+  .scenCard{flex:1; position:relative; border:1px solid var(--line); border-radius:3px; overflow:hidden; cursor:pointer; aspect-ratio:439/1058; background:var(--panel2)}
+  .scenCard img.scenChar{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top center; opacity:.7}
+  .scenCard .scenName{position:absolute; left:0; right:0; bottom:10px; text-align:center; font-size:12px; letter-spacing:1px; color:var(--ink); text-shadow:0 1px 4px #000,0 0 8px #000}
+  .scenCard .scenRec{position:absolute; right:4px; top:4px; font-size:10px; color:var(--gold); border:1px solid var(--gold); padding:1px 4px; border-radius:2px; background:rgba(23,20,15,.78)}
+  .scenCard.sel{border-color:var(--gold); box-shadow:0 0 14px rgba(201,169,89,.35)}
+  .scenCard.sel img.scenChar{opacity:1}
+  .diffRow{display:flex; gap:8px}
+  .diffBtn{flex:1; background:transparent url('assets/ui/btn_off.png') center/100% 100% no-repeat; border:none; color:var(--ink-dim); font-family:inherit; font-size:15px; letter-spacing:4px; padding:13px 0; cursor:pointer}
+  .diffBtn.sel{background-image:url('assets/ui/btn_on.png'); color:var(--ink)}
+  .contImgBtn{display:block; margin:8px auto 0; width:56%; max-width:220px; background:transparent url('assets/ui/btn_off.png') center/100% 100% no-repeat; border:none; color:var(--ink-dim); font-family:inherit; font-size:12px; letter-spacing:2px; padding:11px 0; cursor:pointer}
   .reviewItem{border:1px solid var(--line); border-radius:3px; padding:12px 14px; margin:9px 0; font-size:13px}
   .reviewItem .rn{color:var(--gold); font-size:12px; letter-spacing:2px; margin-bottom:6px}
   .reviewItem .rr{color:var(--ink-dim); line-height:1.9}
@@ -206,9 +218,9 @@
   #shareCard{width:86%; max-width:340px; text-align:center}
   #shareImg{width:100%; border:1px solid var(--gold); display:block}
   /* === 美术资产接入 (B1-B5) === */
-  #app.home-hero::before{content:'';position:absolute;left:0;right:0;top:0;height:44vh;
-    background:url('assets/bg/bg_home_hero.jpg') center 30%/cover no-repeat;pointer-events:none;z-index:0;
-    -webkit-mask-image:linear-gradient(#000 52%,transparent);mask-image:linear-gradient(#000 52%,transparent)}
+  /* 主页（v1.6.7 效果图还原）：城墙黄昏全幅底图（竹简/砚台/竹叶已含在图内） */
+  #app.home-hero::before{content:'';position:absolute;inset:0;
+    background:url('assets/ui/bg_home.png') center top/cover no-repeat;pointer-events:none;z-index:0}
   #main{position:relative;z-index:1}
   .endSealBox{display:flex;align-items:center;gap:12px;margin-bottom:16px}
   .endSealBox .sealImg{width:96px;height:auto;border-radius:2px}
