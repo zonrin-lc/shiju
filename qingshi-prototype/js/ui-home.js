@@ -14,8 +14,7 @@
     document.getElementById('topbar').style.display='none';
     document.getElementById('app').classList.add('home-hero');
     clear(main); clear(optBox); overlay.style.display='none';
-    main.appendChild(el('div','homeTitle','青史生存录'));
-    main.children[0].style.cssText = 'font-size:38px;letter-spacing:9px;margin-top:44px';
+    main.appendChild(el('div','homeTitleImg','<img src="assets/ui/title.png" alt="青史生存录">'));
     main.appendChild(el('div','homeSub','如果你来走这一生 ｜ v' + APP_VERSION));
     main.appendChild(el('div','homeSub','—— 选 择 剧 本 ——'));
     var scenCards = [];
@@ -36,7 +35,7 @@
       c.onclick = function(){ selDiff=k; cards.forEach(function(x){x.el.className='diffCard';}); c.className='diffCard sel'; };
       cards.push({el:c,k:k}); main.appendChild(c);
     });
-    var start = el('button','bigBtn','入 局');
+    var start = el('button','startImgBtn','<img src="assets/ui/btn_ruju.png" alt="入局">');
     start.onclick = function(){ clearGameSave(); newGame(selScen, selDiff); game.start(); renderIntro(); };
     main.appendChild(start);
     // 跨会话存档（GDD 6.4）：当前所选剧本有有效存档则给「继续」入口，按存档难度恢复
@@ -54,4 +53,6 @@
       };
       main.appendChild(cont);
     }
+    // 主页底部装饰（竹简与毛笔，纯装饰不可点）
+    main.appendChild(el('div','homeDeco','<img src="assets/ui/deco_bamboo.png" alt="">'));
   }
