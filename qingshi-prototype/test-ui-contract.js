@@ -132,6 +132,30 @@ let pass = 0, fail = 0;
   console.log('✔ 回溯次数存档契约：5 剧本回溯后导出/导入，次数不重置');
 }
 
+/* 7b. 存档健壮性契约：localStorage 是不可信输入——backtracksThisChapter 非法值（字符串/负数/小数/超配额）拒收，脏 attrs/dev 拒收；合法档正常导入 */
+{
+  const D = require(FILES.lisi);
+  const g0 = new E.Game(D, 'normal', rngHigh);
+  g0.randomOn = false; g0.start(); g0.beginEvents(); g0.backtrack();
+  const sv = JSON.parse(JSON.stringify(g0.exportSave()));
+  let okAll = true;
+  ['oops', -1, 1.5, 99].forEach(v => {  // 字符串 / 负数 / 小数 / 超配额（普通难度每章 1 次）
+    const g2 = new E.Game(D, 'normal', rngHigh);
+    const dirty = JSON.parse(JSON.stringify(sv)); dirty.backtracksThisChapter = v;
+    if (g2.importSave(dirty) !== false) okAll = false;
+  });
+  // 脏 attrs / dev
+  const d1 = JSON.parse(JSON.stringify(sv)); d1.snapshot.attrs.quanshi = 'oops';
+  const d2 = JSON.parse(JSON.stringify(sv)); d2.snapshot.dev = -5;
+  const gA = new E.Game(D, 'normal', rngHigh), gB = new E.Game(D, 'normal', rngHigh);
+  if (gA.importSave(d1) !== false || gB.importSave(d2) !== false) okAll = false;
+  const g3 = new E.Game(D, 'normal', rngHigh);
+  const okValid = g3.importSave(JSON.parse(JSON.stringify(sv))) === true && g3.backtracksThisChapter === 1;
+  if (okAll && okValid) pass++;
+  else { fail++; console.log('✘ 存档健壮性契约失败：okAll=' + okAll + ' okValid=' + okValid); }
+  console.log('✔ 存档健壮性契约：非法 backtracksThisChapter/attrs/dev 拒收，合法档正常导入');
+}
+
 /* 8. 成就图标契约（全剧本）：ACHIEVEMENTS 每个 id 必须有 assets/ach/ach_<id>.png（防"数据有、图没有"）。
  * 豁免清单：美术批次未交付项（已在美术资产清单 v0.2 登记、UI 有 onerror/无名目兜底），交付后从豁免中移除。 */
 {

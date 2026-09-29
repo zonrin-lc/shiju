@@ -37,7 +37,7 @@
     this.resetAll();
   }
 
-  /* 随机流分流（v1.7）：按用途拆流，使险招骰点/际遇/修正不再与发牌共享同一随机序列
+  /* 随机流分流（v1.6.0）：按用途拆流，使险招骰点/际遇/修正不再与发牌共享同一随机序列
    * （原先前面抽到什么牌会改变后面骰到什么点数，连续"倒霉"无法归因）。
    * 注入优先（streams[name]）；未注入的流在首次使用时才从主 rng 取一值作种子派生
    * mulberry32——构造时刻不消耗主流，对既有轨迹扰动最小。
@@ -920,6 +920,13 @@
     if (typeof obj.chapterIdx !== 'number' || !this.d.CHAPTERS[obj.chapterIdx]) return false;
     var s = obj.snapshot;
     if (!s || !s.attrs) return false;
+    // 存档为不可信输入（localStorage）：关键字段类型/范围校验，脏档拒绝导入（v1.6.5）
+    for (var ak in s.attrs) { if (typeof s.attrs[ak] !== 'number' || !isFinite(s.attrs[ak])) return false; }
+    if (s.dev != null && (typeof s.dev !== 'number' || !isFinite(s.dev) || s.dev < 0)) return false;
+    var bt = obj.backtracksThisChapter;
+    if (bt == null) bt = 0;
+    if (typeof bt !== 'number' || !isFinite(bt) || Math.floor(bt) !== bt || bt < 0) return false;
+    if (this.diff.backtrack > 0 && bt > this.diff.backtrack) return false;
     // 逐项还原章首状态（回溯次数随档恢复；回溯系数 coef 按 GDD 既定口径跨会话重置为 1，不恢复）
     this.chapterIdx = obj.chapterIdx;
     this.attrs = Object.assign({}, s.attrs);
@@ -948,7 +955,7 @@
     this.currentRandom = rev;
     // 章内状态按章首语义重置，并重建本章际遇牌堆（enterChapter 的同款过滤）
     // 回溯次数从存档恢复（缺失按 0，兼容旧档）——普通难度"每章 1 次"不可经重新载入刷新
-    this.backtracksThisChapter = obj.backtracksThisChapter || 0;
+    this.backtracksThisChapter = bt;
     this.randomCount = 0;
     this.chapterDeck = (this.d.RANDOM_EVENTS || []).filter(function (e) {
       return obj.chapterIdx >= e.chapters[0] && obj.chapterIdx <= e.chapters[1];
