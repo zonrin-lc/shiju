@@ -23,10 +23,9 @@
     main.appendChild(el('div','homeSub','如果你来走这一生 ｜ v' + APP_VERSION));
     main.appendChild(homeDivider('选 择 朝 代'));
     var row = el('div','scenRow');
-    // 秦（可玩）：嬴政立绘满铺
+    // 秦（可玩）：纯文字卡（不用立绘）
     var qin = el('div','scenCard sel');
-    qin.innerHTML = '<img class="scenChar" src="assets/char/char_yingzheng.png" alt="">'+
-      '<div class="scenName dynName">秦</div><div class="scenRec">可玩</div>';
+    qin.innerHTML = '<div class="dynPlaceholder dynPlayable">秦</div><div class="scenRec">可玩</div>';
     qin.onclick = function(){ homeStage = 'scen'; renderHome(); };
     row.appendChild(qin);
     // 汉/唐/宋/明（敬请期待占位）
