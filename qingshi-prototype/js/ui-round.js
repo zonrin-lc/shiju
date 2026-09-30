@@ -30,7 +30,7 @@
         if (a && a.desc) h += '<div class="cardDesc">'+esc(a.desc)+'</div>';
         if (e.diminishing) h += '<div class="cardDim">已用 '+e.usedCount+' 次 · 收益递减</div>';
         if (e.locked && e.reason) h += '<div class="cardLock">🔒 '+esc(e.reason)+'</div>';
-        if (e.risky) h += '<div class="riskline">'+esc(riskText(e.risky))+'</div>';
+        if (e.risky) h += '<div class="riskline">'+esc(riskText(e.risky, false))+'</div>';
         b.innerHTML = h;
         if (!e.locked) b.onclick = function(){ doPlayCard(i); };
         optBox.appendChild(b);

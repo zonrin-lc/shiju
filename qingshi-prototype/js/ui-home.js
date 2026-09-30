@@ -8,21 +8,40 @@
     return game;
   }
 
-  /* ---------- 主页（v1.6.7 按效果图重做：全幅城墙底图 + 剧本竖条卡横排 + 难度横排图钮） ---------- */
+  /* ---------- 主页（v1.6.8 两级化：朝代页 → 剧本页） ----------
+   * 朝代页：游戏名 + 秦/汉/唐/宋/明竖条卡（秦可玩，其余敬请期待）；
+   * 点秦 → 剧本页：剧本选择 + 难度选择 + 入局 + 继续（存档）。 */
+  var homeStage = 'dynasty';
   function homeDivider(text){
     var d = el('div','homeDivider');
     d.innerHTML = '<img src="assets/ui/divider.png" alt=""><span>'+esc(text)+'</span><img class="r" src="assets/ui/divider.png" alt="">';
     return d;
   }
-  function renderHome(){
-    ttsCancel();
-    document.getElementById('topbar').style.display='none';
-    document.getElementById('app').classList.add('home-hero');
-    clear(main); clear(optBox); overlay.style.display='none';
+
+  function renderDynastyPage(){
     main.appendChild(el('div','homeTitleImg','<img src="assets/ui/title.png" alt="青史生存录">'));
     main.appendChild(el('div','homeSub','如果你来走这一生 ｜ v' + APP_VERSION));
-    // 剧本：横排竖条卡（主角立绘满铺 + 局名；选中金框高亮）。
-    // 注：效果图原为「1 可玩 + 4 敬请期待（汉唐宋明占位）」，实际五剧本全可玩，按实况还原
+    main.appendChild(homeDivider('选 择 朝 代'));
+    var row = el('div','scenRow');
+    // 秦（可玩）：嬴政立绘满铺
+    var qin = el('div','scenCard sel');
+    qin.innerHTML = '<img class="scenChar" src="assets/char/char_yingzheng.png" alt="">'+
+      '<div class="scenName dynName">秦</div><div class="scenRec">可玩</div>';
+    qin.onclick = function(){ homeStage = 'scen'; renderHome(); };
+    row.appendChild(qin);
+    // 汉/唐/宋/明（敬请期待占位）
+    ['汉','唐','宋','明'].forEach(function(dn){
+      var c = el('div','scenCard dynLocked');
+      c.innerHTML = '<div class="dynPlaceholder">'+dn+'</div><div class="dynSoon">敬请期待</div>';
+      row.appendChild(c);
+    });
+    main.appendChild(row);
+    main.appendChild(el('div','homeSub','汉唐宋明，敬请期待——秦，现在就启程。'));
+  }
+
+  function renderScenarioPage(){
+    main.appendChild(el('div','homeTitleImg','<img src="assets/ui/title.png" alt="青史生存录">'));
+    // 剧本：横排竖条卡（主角立绘满铺 + 局名；选中金框高亮）
     main.appendChild(homeDivider('选 择 剧 本'));
     var scenRow = el('div','scenRow');
     Object.keys(SCENARIOS).forEach(function(k){
@@ -36,7 +55,7 @@
       scenRow.appendChild(c);
     });
     main.appendChild(scenRow);
-    // 难度：横排三钮（图底 + 名；说明文字按效果图不列——详情见 GDD 6.2）
+    // 难度：横排三钮（图底 + 名）
     main.appendChild(homeDivider('选 择 难 度'));
     var diffRow = el('div','diffRow');
     ['story','normal','hardcore'].forEach(function(k){
@@ -64,4 +83,17 @@
       };
       main.appendChild(cont);
     }
+    // 返回朝代页
+    var back = el('button','homeBack','‹ 改选朝代');
+    back.onclick = function(){ homeStage = 'dynasty'; renderHome(); };
+    main.appendChild(back);
+  }
+
+  function renderHome(){
+    ttsCancel();
+    document.getElementById('topbar').style.display='none';
+    document.getElementById('app').classList.add('home-hero');
+    clear(main); clear(optBox); overlay.style.display='none';
+    if (homeStage === 'dynasty') renderDynastyPage();
+    else renderScenarioPage();
   }

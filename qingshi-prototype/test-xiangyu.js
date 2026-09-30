@@ -124,10 +124,20 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 复盘应为 5 条，实际 ' + g.ending.review.length); }
 }
 
-/* ---------- 2. 苟活线 → E2 会稽老卒（不预兵事） ---------- */
+/* ---------- 2. 苟活线 → E2 会稽老卒（不预兵事） ----------
+ * v1.6.8：0-3「不预兵事」加 notflag wanrendi 早退闸（对齐 lisi 0-3-B 模式）——
+ * 已「学万人敌 / 观始皇渡浙江」立志者不再收零代价退出。故此线须先在 0-1 走「以力代学」。 */
 {
-  const { g } = play('normal', { '0-3': '不预兵事' });
+  const { g } = play('normal', { '0-1': '以力代学', '0-3': '不预兵事' });
   expect('苟活线（老卒）', g.ending, 'E2');
+}
+
+/* ---------- 2-2. 早退闸契约：已立志者不得零代价退出（v1.6.8） ---------- */
+{
+  const { g, trace } = play('normal', { '0-1': '昼夜研习', '0-3': '随叔父赴府' });
+  const lockedOut = trace.every(t => t[0] !== '0-3' || t[1].indexOf('不预兵事') < 0);
+  if (lockedOut) { pass++; console.log('✔ 早退闸：学万人敌立志后，0-3「不预兵事」不可选'); }
+  else { fail++; console.log('✘ 早退闸失效：立志者仍可选「不预兵事」'); }
 }
 
 /* ---------- 3. 苟活线 → E3 执戟余生（咸阳后事了拂衣） ---------- */

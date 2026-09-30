@@ -1,6 +1,6 @@
 /* 批量平衡模拟器（GDD 第十章 平衡准则验收）
  * 用多种策略各跑 N 局 headless 对局，统计结局/通关率/评级分布，校验：
- *   准则 3：属性制衡——任何单一属性策略通关率不得 >60%
+ *   准则 3：属性制衡——单一属性策略通关率仅作**压力测试读数**（v1.6.1 起非验收门槛，GDD 附录 D #25）
  *   准则 5：每剧本 ≥3 条通关路线（苟活 E2/E3、稳健 E4/E5、逆天 E6/E7 均应可达）
  *   准则 1：无万能最优选项（代理指标：各策略平均总分差、关键节点选项收益差）
  *   准则 2：历史惯性（代理指标：激进偏离策略的死亡率 vs 史实策略）
@@ -128,9 +128,26 @@ const STRATEGIES = {
   },
 };
 const ATTR_STRATS = ['quanshi', 'shengwang', 'junxin', 'caifu', 'caixue', 'survive'];
-/* xushi 策略（v1.6.1）：每个关键事件先蓄势一次（round 阶段返回 -1 由 playOne 特判调 playXushi），
- * 事件抉择与已蓄势后的选卡均按 survive 求生打分——用于检验"永远蓄势"的收益曲线。 */
-STRATEGIES.xushi = STRATEGIES.survive;
+/* xushi 策略（v1.6.1）：每个关键事件先蓄势一次（round 阶段返回 -1 由 playOne 特判调 playXushi）。
+ * v1.6.8 修正——此前 STRATEGIES.xushi = STRATEGIES.survive（事件抉择与已蓄势后的选卡完全同源），
+ * 两条策略在 10 万局 × 5 剧本下产出**逐项完全相同**的统计量，说明"蓄势"从未被独立测量过：
+ * 蓄势的全部作用本应体现在「多买一个回合」与「险招 +10」的边际收益上，而这两项在共用打分后被抵消。
+ * 现给 xushi 独立的"厚积"打分：以危机压制为纲，但额外偏好**不消耗回合的解法**（dev=0 且不加危机），
+ * 即"这一回合我宁可什么都不做，也要留一分胜算到抉择那一刻"——这才是蓄势的收益形状。 */
+STRATEGIES.xushi = (c) => pickBy(c.options, c.rng, o => {
+  const eff = o.eff || {};
+  const crisis = (eff.attrs && eff.attrs.weiji) || 0;
+  const dev = eff.dev || 0;
+  const after = c.g.attrs.weiji + crisis;
+  // 厚积（v1.6.8）：蓄势的收益形状 = "多留一分胜算到抉择那一刻"，代价是每节点少一轮经营。
+  // 打分以**存亡**为纲——危险时（预计危机逼近致死线）拼命压险；安全时允许承担一点代价换取推进，
+  // 否则在"全选项都加危机"的剧本（如项羽）里会无路可走、原地打转到 E8。
+  let s;
+  if (after >= 60) s = -crisis * 20 - (after - 60) * 3;   // 逼近死线：压险压倒一切
+  else s = -crisis * 4 + (dev === 0 ? 6 : 0) + (after < 30 ? 4 : 0);  // 安全期：厚积优先，少作孽
+  s += (eff.attrs && eff.attrs.junxin) || 0;
+  return s;
+});
 
 /* ---------- round 阶段选卡（行动卡回合制） ----------
  * 打分函数统一作用于 eff（事件选项与行动卡同口径）；关键卡估值 = 当前事件各未锁定选项中该策略的最优值 */
@@ -143,14 +160,27 @@ const EFF_SCORE = {
   junxin:    eff => (eff.attrs && eff.attrs.junxin) || 0,
   caifu:     eff => (eff.attrs && eff.attrs.caifu) || 0,
   caixue:    eff => (eff.attrs && eff.attrs.caixue) || 0,
+  // 厚积（v1.6.8）：安全期少作孽、危险期拼命压险——同 STRATEGIES.xushi
+  // wNow = 打出前的危机值；after = wNow + 本卡增减，用于判断是否逼近死线
+  xushi:     (eff, wNow) => {
+    const crisis = (eff.attrs && eff.attrs.weiji) || 0;
+    const dev = eff.dev || 0;
+    const after = wNow + crisis;
+    let s;
+    if (after >= 60) s = -crisis * 20 - (after - 60) * 3;
+    else s = -crisis * 4 + (dev === 0 ? 6 : 0) + (after < 30 ? 4 : 0);
+    s += (eff.attrs && eff.attrs.junxin) || 0;
+    return s;
+  },
 };
 function pickCard(stratName, g, rng) {
   const offer = g.getOffer();
   if (stratName === 'hist') return 0; // 关键卡在则点关键卡（事件内照 hist 逻辑）
-  if (stratName === 'xushi' && !g.xushi) return -1; // 蓄势策略：每个关键事件先蓄势（playOne 特判）
-  if (stratName === 'xushi') stratName = 'survive'; // 已蓄势则按求生打分
-  if (stratName === 'random') {
-    const cand = [0]; // 4 张卡均匀随机（跳过锁定行动卡）
+  if (stratName === 'xushi' && !g.xushi) return -1; // 蓄势策略：每个关键事件先蓄势一次（playOne 特判）
+  // 已蓄势则按"厚积"打分出行动卡（v1.6.8 修复）：
+  // 此前 return -1 无条件成立 → playXushi() 在 xushi 态返回 null → 兜底 g.playCard(0) 直接点关键卡，
+  // 行动卡整局一张未出，只剩"白蓄一次势就进抉择"，蓄势收益被彻底测反（项羽 1.4% 通关）。
+  if (stratName === 'random') {    const cand = [0]; // 4 张卡均匀随机（跳过锁定行动卡）
     for (let i = 1; i < offer.length; i++) if (!offer[i].locked) cand.push(i);
     return cand[Math.floor(rng() * cand.length)];
   }
@@ -215,17 +245,18 @@ function pickCard(stratName, g, rng) {
     }
     return 0;
   }
-  const score = EFF_SCORE[stratName];
-  let keyVal = -Infinity;
-  g.getOptions().forEach(o => { if (!o.locked) keyVal = Math.max(keyVal, score(o.opt.eff || {})); });
-  let best = keyVal, ties = [0];
-  for (let i = 1; i < offer.length; i++) {
-    if (offer[i].locked) continue;
-    const v = score((offer[i].action && offer[i].action.eff) || {});
-    if (v > best) { best = v; ties = [i]; }
-    else if (v === best) ties.push(i);
-  }
-  return ties[Math.floor(rng() * ties.length)];
+    const score = EFF_SCORE[stratName];
+    const wj = g.attrs.weiji;   // 供状态感知打分（xushi）推算结算后危机
+    let keyVal = -Infinity;
+    g.getOptions().forEach(o => { if (!o.locked) keyVal = Math.max(keyVal, score(o.opt.eff || {}, wj)); });
+    let best = keyVal, ties = [0];
+    for (let i = 1; i < offer.length; i++) {
+      if (offer[i].locked) continue;
+      const v = score((offer[i].action && offer[i].action.eff) || {}, wj);
+      if (v > best) { best = v; ties = [i]; }
+      else if (v === best) ties.push(i);
+    }
+    return ties[Math.floor(rng() * ties.length)];
 }
 
 /* 章末事件选项引擎不校验锁定（防御在 UI），模拟器按 req 自行过滤；
@@ -357,10 +388,12 @@ Object.keys(ROUTES).forEach(r => {
   log(`${r}（${ROUTES[r].join('/')}）：${n} 局`);
 });
 
-log('\n—— 准则 3：单一属性策略通关率（阈值 ≤60%；优质通关率为辅证）——');
+log('\n—— 准则 3：单一属性策略通关率（压力测试，非验收门槛 · GDD 附录 D #25 / 附录 O.1）——');
+log('说明：GDD v1.6.1 起本项定位为「极端压力测试」，不设 PASS/FAIL 门槛——「每步只最大化单一属性」本就不是真实玩家行为。');
+log('正式验收看：①优质通关率 ②逆天路线可达率 ③史实线死亡率 ④关键属性触底率 ⑤关键节点选择分布。以下仅作参考读数。');
 ATTR_STRATS.forEach(sn => {
   const s = stats[sn], r = 100 * s.clear / s.games, rb = 100 * s.clearB / s.games;
-  log(`${r <= 60 ? 'PASS' : 'FAIL'}  ${sn.padEnd(10)} 通关 ${r.toFixed(1)}% ｜ 优质通关 ${rb.toFixed(1)}%`);
+  log(`  ${sn.padEnd(10)} 通关 ${r.toFixed(1)}% ｜ 优质通关 ${rb.toFixed(1)}%${r > 60 ? '  ⚠ 高于旧 60% 参考线' : ''}`);
 });
 
 log('\n—— 准则 5：三条通关路线可达性（任一策略达成即计）——');
@@ -373,6 +406,9 @@ log('\n—— 准则 1：无万能最优（代理）——');
 const avg = sn => safeDiv(stats[sn].sumTotal, stats[sn].games);
 const best = stratNames.slice().sort((a, b) => avg(b) - avg(a))[0];
 log(`最优策略 ${best}（均分 ${avg(best).toFixed(1)}${best === 'nitian' ? '，规划型攻略上限，持上帝视角' : ''}） vs 随机 ${avg('random').toFixed(1)}，差 ${(avg(best) - avg('random')).toFixed(1)} 分`);
+log('注：nitian 为**脚本化预设路线**（NITIAN_PREFS 逐节点指定选项），持全局信息优势，其均分天然居首；');
+log('    且「总分允许突破 100」是 GDD 5.5 明确定义（难度系数 × 逆天加成 +15% 的表现分，v1.6.1）。');
+log('    二者叠加 → 逆天均分 90+ 且评级集中于 S 属预期，**非评分模型缺陷**，勿据此改动评分公式。');
 log('关键节点选项收益差（随机策略，样本≥30 的选项间最大均分差）：');
 const kns = keyNodeStats.random;
 Object.keys(kns).forEach(node => {

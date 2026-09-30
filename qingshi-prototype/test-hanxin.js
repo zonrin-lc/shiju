@@ -6,7 +6,8 @@ const E = require('./engine.js');
 const rngHigh = () => 0.99;
 const rngLow = () => 0.01;
 
-function play(diffKey, script, rng, endScript, hook) {
+function play(diffKey, script0, rng, endScript, hook) {
+  const script = Object.assign({}, script0);   // 浅拷贝：takeScript 会消费队列，不污染调用方的字面量
   const g = new E.Game(D, diffKey, rng || rngHigh);
   g.randomOn = false;
   g.start();
@@ -41,7 +42,7 @@ function play(diffKey, script, rng, endScript, hook) {
     if (g.phase === 'event') {
       const ev = g.findEvent(g.eventId);
       const opts = g.getOptions();
-      let idx = pickIndex(ev.options, script[ev.id], opts);
+      let idx = pickIndex(ev.options, takeScript(script, ev.id), opts);
       if (idx == null) throw new Error('事件 ' + ev.id + ' 没有可用选择（script 未指定或全部锁定）');
       trace.push([ev.id, ev.options[idx].t, g.dev]);
       g.choose(idx);
@@ -78,21 +79,35 @@ function driveTo(stopId, picks) {
   throw new Error('driveTo 未能在限定步数内到达 ' + stopId);
 }
 
-function pickIndex(options, want, wrapped) {
-  if (want == null) {
-    if (wrapped) { for (let i = 0; i < wrapped.length; i++) if (!wrapped[i].locked) return i; return null; }
-    return 0;
-  }
-  if (typeof want === 'number') return want;
-  for (let i = 0; i < options.length; i++) {
-    const t = options[i].t || options[i].opt && options[i].opt.t;
-    if (t && t.indexOf(want) >= 0) {
-      if (wrapped && wrapped[i].locked) return null;
-      return i;
+  function pickIndex(options, want, wrapped) {
+    if (want == null) {
+      if (wrapped) { for (let i = 0; i < wrapped.length; i++) if (!wrapped[i].locked) return i; return null; }
+      return 0;
     }
+    if (typeof want === 'number') return want;
+    for (let i = 0; i < options.length; i++) {
+      const t = options[i].t || options[i].opt && options[i].opt.t;
+      if (t && t.indexOf(want) >= 0) {
+        if (wrapped && wrapped[i].locked) return null;
+        return i;
+      }
+    }
+    return null;
   }
-  return null;
-}
+  /* 脚本取值：数组 = 同一事件的多次到访脚本（依次取用，如 2-4「二连执意要走」）；
+   * 非数组 = 单次指定。用完的项从 script 移除，保留其余项不变。 */
+  function takeScript(script, key) {
+    if (script == null) return undefined;
+    var v = script[key];
+    if (v == null) return undefined;
+    if (Array.isArray(v)) {
+      if (!v.length) { delete script[key]; return undefined; }
+      var head = v[0], rest = v.slice(1);
+      if (rest.length) script[key] = rest; else delete script[key];
+      return head;
+    }
+    return v;
+  }
 
 let pass = 0, fail = 0;
 function expect(name, actual, wantId, wantVariant) {
@@ -123,17 +138,29 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 复盘应为 5 条，实际 ' + g.ending.review.length); }
 }
 
-/* ---------- 2a. 苟活线 → E2 漂母之钓（不投军） ---------- */
+/* ---------- 2a. 苟活线 → E2 漂母之钓（不投军） ----------
+ * v1.6.8：0-3「守钓不问世事」加 notflag piaomu-en 早退闸（对齐 lisi 0-3-B 的 notflag 观鼠悟道 模式）——
+ * 已受漂母饭、立誓重恩者不再收零代价退出。故此线须先在 0-1 走「不食，转身离去」（不受恩、不置 flag）。 */
 {
-  const { g } = play('normal', { '0-3': '守钓不问世事' });
+  const { g } = play('normal', { '0-1': '不食', '0-3': '守钓不问世事' });
   expect('苟活线（守钓）', g.ending, 'E2');
 }
 
-/* ---------- 2b. 苟活线 → E2（萧何月下二连执意要走） ---------- */
+/* ---------- 2a-2. 早退闸契约：已立誓者不得零代价退出（v1.6.8） ---------- */
+{
+  const { g, trace } = play('normal', { '0-1': '立誓', '0-3': '杖剑从戎' });
+  const lockedOut = trace.every(t => t[0] !== '0-3' || t[1].indexOf('守钓') < 0);
+  if (lockedOut) { pass++; console.log('✔ 早退闸：受漂母恩立誓后，0-3「守钓不问世事」不可选'); }
+  else { fail++; console.log('✘ 早退闸失效：立誓者仍可选「守钓不问世事」'); }
+}
+
+/* ---------- 2b. 苟活线 → E2（萧何月下二连执意要走） ----------
+ * 2-4 首次「执意要走」被驳回（flag zhui2），再次到访方以「执意再走」收束 E2（v1.6.8 P1-4）。 */
 {
   const { g } = play('normal', {
     '0-3': '杖剑从戎', '1-3': '亡楚归汉',
-    '2-1': '上不欲就天下乎', '2-2': '整肃仓廪', '2-3': '尽陈兵略', '2-4': '执意要走'
+    '2-1': '上不欲就天下乎', '2-2': '整肃仓廪', '2-3': '尽陈兵略',
+    '2-4': ['执意要走', '执意再走']
   });
   expect('苟活线（终走）', g.ending, 'E2');
 }

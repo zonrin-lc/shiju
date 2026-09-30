@@ -123,10 +123,20 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 复盘应为 5 条，实际 ' + g.ending.review.length); }
 }
 
-/* ---------- 2a. 苟活线 → E2 陇上归耕（连夜亡去） ---------- */
+/* ---------- 2a. 苟活线 → E2 陇上归耕（连夜亡去） ----------
+ * v1.6.8：0-2「连夜亡去」加 notflag honghu 早退闸（对齐 lisi 0-3-B 模式）——
+ * 已「笑而不辩」在胸中者不再收零代价退出。故此线须先在 0-1 走「恼而掷锄」。 */
 {
-  const { g } = play('normal', { '0-2': '连夜亡去' });
+  const { g } = play('normal', { '0-1': '恼而掷锄', '0-2': '连夜亡去' });
   expect('苟活线（亡去）', g.ending, 'E2');
+}
+
+/* ---------- 2a-2. 早退闸契约：已蓄志者不得零代价退出（v1.6.8） ---------- */
+{
+  const { g, trace } = play('normal', { '0-1': '笑而不辩', '0-2': '接籍为屯长' });
+  const lockedOut = trace.every(t => t[0] !== '0-2' || t[1].indexOf('连夜亡去') < 0);
+  if (lockedOut) { pass++; console.log('✔ 早退闸：笑而不辩蓄志后，0-2「连夜亡去」不可选'); }
+  else { fail++; console.log('✘ 早退闸失效：蓄志者仍可选「连夜亡去」'); }
 }
 
 /* ---------- 2b. 苟活线 → E2（失期散伙） ---------- */

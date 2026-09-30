@@ -923,6 +923,7 @@
     // 存档为不可信输入（localStorage）：关键字段类型/范围校验，脏档拒绝导入（v1.6.5）
     for (var ak in s.attrs) { if (typeof s.attrs[ak] !== 'number' || !isFinite(s.attrs[ak])) return false; }
     if (s.dev != null && (typeof s.dev !== 'number' || !isFinite(s.dev) || s.dev < 0)) return false;
+    if (s.ach != null && !Array.isArray(s.ach)) return false;   // 成就列表：脏档（字符串/对象）拒收
     var bt = obj.backtracksThisChapter;
     if (bt == null) bt = 0;
     if (typeof bt !== 'number' || !isFinite(bt) || Math.floor(bt) !== bt || bt < 0) return false;
@@ -934,7 +935,13 @@
     this.flags = Object.assign({}, s.flags || {});
     this.histScore = s.histScore || 0;
     this.merits = (s.merits || []).slice();
+    // 已解锁成就不因读档回退（v1.6.8 P1-2 修复）：与 backtrack() 同一"成就保留"语义。
+    // 存档为章首快照，只含该章开局前解锁的成就；UI 侧 newGame() 已先灌入 localStorage
+    // 跨局累计成就。此处若直接覆盖，跨会话累计的成就将被截断，且随后一次 saveCollection()
+    // 写回即不可逆丢失——故改为「快照 ∪ 已有」合并。
+    var keepAch = this.ach.slice();
     this.ach = (s.ach || []).slice();
+    keepAch.forEach(function (a) { if (this.ach.indexOf(a) < 0) this.ach.push(a); }, this);
     this.keyChoices = (s.keyChoices || []).slice();
     this.peak = Object.assign({}, s.peak || {});
     this.zg = s.zg != null ? s.zg : ((this.d.HIDDEN && this.d.HIDDEN.init != null) ? this.d.HIDDEN.init : 30);
@@ -1067,8 +1074,12 @@
     }
     if (!this.randomOn) return null;
     if (!inPlay || this.currentRandom) return null;
-    // 逆天段（偏离≥71）：章中随机反噬一次，复用际遇插入机制（GDD 5.2）
-    if (!this._backlashDone && this.devBand() >= 3 && this._stream('event')() < this.randomChance) {
+    // 逆天段（偏离≥71）：章中触发一次反噬，复用际遇插入机制（GDD 5.2 / 附录 D #7）
+    // 口径（v1.6.8 P1-3 修复）：GDD 为「偏离≥71 后**每章一次**反噬」——入逆天段即每章必遇一次，
+    // 「随机」指的是从重度修正池**抽取哪一条**，不是"是否触发"。此前此处复用 randomChance
+    // （际遇触发率 0.4）作概率闸门，与 randomOn=false 的确定性测试也相互干扰。
+    // 现改为确定性触发（_backlashDone 仍保证每章至多一次）；池为空时静默跳过，退化为无反噬章。
+    if (!this._backlashDone && this.devBand() >= 3) {
       this._backlashDone = true;
       var bpool = this.d.CORRECTIONS.filter(function (c) { return c.minDev >= 71; });
       if (bpool.length > 0) {

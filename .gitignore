@@ -6,3 +6,9 @@ desktop.ini
 .inline-check.js
 .srv.pid
 .workbuddy/
+
+# 一次性迁移脚本（v1.6.8 审查：refactor-*.py 已完成使命并删除，勿再入库）
+qingshi-prototype/refactor-*.py
+# 美术处理中间产物：_raw 原始导出与 _gen 探针/校对图，非运行时资产
+qingshi-prototype/assets/**/*_raw.png
+qingshi-prototype/assets/_gen/

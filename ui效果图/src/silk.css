@@ -1,0 +1,145 @@
+/* 《青史生存录》UI 重设计 · 方向 A「帛书」 v1.0
+ * ============================================================================
+ * 转向：从「深色夜读」翻转为「米黄绢帛」。这不是换个底色，是换一种载体。
+ *
+ * 设计依据
+ *   1. 载体 —— 帛书 / 简牍。这是秦汉人真正写字的地方，文字游戏就该长在帛上。
+ *   2. 竖排 —— 中文古籍的原生方向。`writing-mode: vertical-rl` 让标题、卡片名、
+ *      结局名直立书写，自右向左起读。这一条就足以让观感与竖版卡片完全不同。
+ *   3. 界行 —— 帛书与简牍上朱砂画出的竖格线。既是装饰，也是本作核心机制的外化：
+ *      偏离度越高，被朱砂染红的界格越多 —— 「你在改写史书的格子」。
+ *   4. 印即按钮 —— 交互控件做成印章，而不是圆角矩形。
+ *
+ * 与 v1（旧设计）的关系：全面推翻，不做增量。旧版是深色玻璃 + 横向卡片；
+ * 本版是浅色绢帛 + 竖排文字 + 界行格 + 印章控件。
+ * ============================================================================ */
+
+:root{
+  /* —— 帛：米黄绢地，五级由亮到暗 —— */
+  --silk-0:#f2eada;      /* 帛面高光 */
+  --silk-1:#eae0c6;      /* 主底 */
+  --silk-2:#e0d3b4;      /* 区块底 */
+  --silk-3:#d2c2a0;      /* 凹槽/边框 */
+  --silk-4:#c0ad88;      /* 深边 */
+
+  /* —— 墨：三级 —— */
+  --ink-1:#241d13;       /* 正文 */
+  --ink-2:#544a37;       /* 次级 */
+  --ink-3:#8b7f66;       /* 注记 */
+
+  /* —— 朱：界行 / 印 / 偏离。全站唯一高饱和色 —— */
+  --zhu:#b23a2c;
+  --zhu-d:#8d2b1f;
+  --zhu-w:rgba(178,58,44,.10);
+
+  /* —— 辅色：石青（史册）与土黄（泥金） —— */
+  --qing:#48695f;
+  --tu:#a37c3c;
+
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+
+  --jie-w:1px;           /* 界行宽 */
+  --jie-c:rgba(178,58,44,.34);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+
+html,body{ background:#b8ab90; font-family:var(--serif); color:var(--ink-1); }
+
+/* ============================ 画框 ============================ */
+.stage{
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:24px; padding:32px 20px;
+  background:radial-gradient(120% 80% at 50% -10%, #8d8270 0%, #6f6555 60%, #51493d 100%);
+}
+.caption{ text-align:center; color:#c3b8a2; font-size:12px; letter-spacing:3px; }
+.caption b{ color:#e6dcc4; font-weight:400; }
+
+.device{
+  position:relative; width:390px; height:844px;
+  border-radius:6px;                    /* 帛是方的，只微圆 */
+  background:var(--silk-1);
+  box-shadow:
+    0 0 0 8px #6b6150, 0 0 0 9px #403a30,
+    0 22px 60px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+.notch{
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:112px; height:24px; border-radius:0 0 14px 14px;
+  background:#1a1712; z-index:70;
+}
+.statusbar{
+  position:absolute; top:0; left:0; right:0; height:44px; z-index:66;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px 0 28px; font-size:12px; color:var(--ink-2);
+  pointer-events:none;
+}
+.statusbar .r{ display:flex; align-items:center; gap:5px; }
+
+/* ============================ 帛面 ============================ */
+/* 绢帛底：真实生成的纹理（经纬织纹 + 霉斑 + 做旧），非 CSS 模拟 */
+.silk{
+  position:absolute; inset:0; z-index:0;
+  background:#eae0c6 url('tex_silk.png') repeat;
+  background-size:512px 512px;
+}
+/* 界行：朱砂竖格线，帛书/简牍的原生结构 */
+.jie{
+  position:absolute; top:0; bottom:0; z-index:1; pointer-events:none;
+  width:var(--jie-w); background:var(--jie-c);
+}
+
+/* ============================ 排版：竖排为纲 ============================ */
+/* 竖排块：从右向左起读 */
+.v{
+  writing-mode:vertical-rl; text-orientation:upright;
+  letter-spacing:.16em;
+}
+.v-loose{ letter-spacing:.34em; }
+
+/* 竖排眉题：朱点 + 短字 */
+.vlabel{
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-size:12px; letter-spacing:.42em; color:var(--ink-3);
+}
+
+/* 印：朱文方印，交互控件用它。方形，双边框（真印的边栏），略斜如手钤 */
+.seal-btn{
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  width:86px; height:86px; padding:0;
+  border:3px solid var(--zhu); border-radius:2px;
+  color:var(--zhu); background:var(--zhu-w);
+  font-size:23px; line-height:1.05; letter-spacing:0;
+  cursor:pointer; font-family:inherit;
+  writing-mode:vertical-rl; text-orientation:upright;   /* 两字直下 */
+  transform:rotate(-1.6deg);
+  box-shadow:0 2px 0 rgba(141,43,31,.18);
+}
+.seal-btn::after{        /* 内框：真印的双边 */
+  content:''; position:absolute; inset:5px;
+  border:1px solid var(--zhu); opacity:.45; border-radius:1px;
+}
+.seal-btn:active{ background:rgba(178,58,44,.22); transform:rotate(-1.6deg) scale(.985); }
+
+/* 简牍：窄长条，顶端有编绳穿孔 */
+.zhuan{
+  position:relative; background:var(--silk-2);
+  border:1px solid var(--silk-4);
+  border-radius:1px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.4);
+}
+.zhuan .hole{        /* 编绳孔 */
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  width:5px; height:5px; border-radius:50%;
+  background:var(--silk-4); box-shadow:inset 0 1px 1px rgba(0,0,0,.3);
+}
+
+/* 朱栏格：偏离度外化 —— 被朱砂染红的界格 */
+.jiebar{ display:flex; gap:2px; align-items:flex-end; height:34px; }
+.jiebar i{
+  display:block; width:3px; background:var(--silk-4); border-radius:.5px;
+  transition:background .3s, height .3s;
+}
+.jiebar i.lit{ background:var(--zhu); }
+.jiebar i.hot{ background:var(--zhu-d); }

@@ -39,10 +39,13 @@
     main.scrollTop = 0;
   }
 
-  /* 险招（GDD 附录 J）：成功率展示——普通/剧情显示百分比，硬核显示档位词（隐藏数值口径） */
+  /* 险招（GDD 附录 J）：成功率展示——普通/剧情显示百分比，硬核显示档位词（隐藏数值口径）
+   * withXushi=false 用于行动卡：蓄势只兑现"下一次事件抉择"（GDD 附录 N.1 / engine.js choose），
+   * playCard 掷骰用原始 rate，故行动卡不得显示蓄势加成。 */
   function riskWord(rate){ return rate>=70?'七成':rate>=50?'五成':rate>=40?'四成':rate>=30?'三成':rate>=20?'二成':'一成五'; }
-  function riskText(risky){
-    var xb = game.xushi ? 10 : 0;
+  function riskText(risky, withXushi){
+    if (withXushi === undefined) withXushi = true;
+    var xb = (withXushi && game.xushi) ? 10 : 0;
     var eff = Math.min(70, risky.rate + xb);
     var t = game.diff.hideAttrs ? ('成算 '+riskWord(eff)) : ('成功率 '+eff+'%');
     if (xb) t += game.diff.hideAttrs ? '（蓄势生效）' : '（含蓄势+10）';

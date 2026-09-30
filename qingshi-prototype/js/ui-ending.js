@@ -84,11 +84,15 @@
     var share = el('button','ghostBtn','分 享 此 局');
     share.onclick = function(){ showShareCard(en); };
     main.appendChild(share);
-    if (game.diff.backtrack !== 0){
-      var bt = el('button','ghostBtn','回 溯 至 本 章 开 头');
-      bt.onclick = function(){ if (game.backtrack()) renderIntro(true); };
-      main.appendChild(bt);
-    }
+      if (game.diff.backtrack !== 0){
+        var bt = el('button','ghostBtn','回 溯 至 本 章 开 头');
+        bt.onclick = function(){
+          if (!game.canBacktrack()) { showSettle('', '本章回溯额度已用尽，无法回到本章开头。', [], 0, null, null, function(){}); return; }
+          if (!window.confirm('回溯到本章开头？\n\n· 本局进度将回到该章开头，偏离度与已解锁的成就、图鉴不会重置')) return;
+          if (game.backtrack()) renderIntro(true);
+        };
+        main.appendChild(bt);
+      }
     var home = el('button','ghostBtn','返 回 主 页');
     home.onclick = renderHome;
     main.appendChild(home);

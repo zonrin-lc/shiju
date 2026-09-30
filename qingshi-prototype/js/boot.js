@@ -17,8 +17,13 @@
   document.getElementById('btnAttrs').onclick = function(){ openDrawer('attrs'); };
   document.getElementById('btnGloss').onclick = function(){ if (game) openDrawer('gloss'); };
   document.getElementById('drawerMask').onclick = function(){ document.getElementById('drawer').className=''; };
+  /* 回溯确认态（UI 页面清单要求）：回溯会消耗本章额度且改写时间线，需二次确认 */
   document.getElementById('btnBack').onclick = function(){
-    if (game && game.canBacktrack()){ game.backtrack(); renderIntro(true); }
+    if (!game || !game.canBacktrack()) return;
+    var left = game.diff.backtrack > 0 ? (game.diff.backtrack - game.backtracksThisChapter) : 0;
+    var msg = '回溯到本章开头？\n\n· 剩余额度 ' + (game.diff.backtrack > 0 ? left : '不限') + ' 次\n· 本章进度将回到开头，偏离度与已解锁的成就、图鉴不会重置\n· 蓄势与险招烧毁会被清空';
+    if (!window.confirm(msg)) return;
+    game.backtrack(); renderIntro(true);
   };
 
   document.getElementById('glossClose').onclick = function(){ document.getElementById('glossMask').className=''; };

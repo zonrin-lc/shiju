@@ -236,7 +236,7 @@
                  '你批改竹简的手停了一下。',
                  '窗外弟子们诵书的声音正齐。你望着案上那盏灯——它照得见你的书，照不见你的天下。'],
           options: [
-            { t: '继续著述。乱世之中，笔墨比官印长久', res: '数十年后，你的书在灰烬中被一个老儒背了出来。他记不全你的名字。又过了许多年，有个孩子在兰陵旧址上拾到半枚残简，认得上面的字，认不得写字的人。笔墨确实比官印长久——长久到连你都被它忘了。', eff: { dev: 0, hist: 20 }, to: { ending: 'E2' } },
+            { t: '继续著述。乱世之中，笔墨比官印长久', req: { notflag: 'zhitin' }, res: '数十年后，你的书在灰烬中被一个老儒背了出来。他记不全你的名字。又过了许多年，有个孩子在兰陵旧址上拾到半枚残简，认得上面的字，认不得写字的人。笔墨确实比官印长久——长久到连你都被它忘了。', eff: { dev: 0, hist: 20 }, to: { ending: 'E2' } },
             { t: '终究还是意难平——入秦', res: '你烧了讲义，只留下一篇自序。弟子问先生何往。你说：去把学问卖给识货的。火盆里的竹简哔剥作响，像在替你鼓掌，又像在替你送葬。', eff: { attrs: { caixue: 4, shengwang: 5 }, dev: 3 }, to: 'NEXT' }
           ] }
       ]
@@ -1123,10 +1123,15 @@
   // 史评加成（韩非存活至结局 +10）与结局页附加提示
   var SHIPING_BONUS_FLAGS = [{ flag: 'hanfeicun', bonus: 10 }];
   var ALIVE_NOTE = { flag: 'hanfeicun', text: '韩非尚存，士林念之——史评 +10' };
+  // 功业计分（v1.6.8）：显式声明，不再依赖 engine.js 的内置默认表。
+  // 此前本剧本未定义 MERIT_MAP，靠引擎硬编码兜底（未命中者静默按 8 分计）——
+  // 数值恰好全中，但跨剧本不对称且新增功业时极易漏配。
+  var MERIT_MAP = { '长史': 5, '廷尉': 8, '丞相': 20, '郡县': 15, '书同文': 15 };
 
   return {
     ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, DIFFICULTY: DIFFICULTY,
     SCENARIO: SCENARIO, HIDDEN: HIDDEN, SHIPING_BONUS_FLAGS: SHIPING_BONUS_FLAGS, ALIVE_NOTE: ALIVE_NOTE,
+    MERIT_MAP: MERIT_MAP,
     DEV_BANDS: DEV_BANDS, ENDINGS: ENDINGS, CHAPTERS: CHAPTERS,
     CORRECTIONS: CORRECTIONS, ACHIEVEMENTS: ACHIEVEMENTS, KEY_NODE_NAMES: KEY_NODE_NAMES,
     RANDOM_EVENTS: RANDOM_EVENTS, CRISIS_EVENTS: CRISIS_EVENTS, ACTIONS: ACTIONS, GLOSSARY: GLOSSARY

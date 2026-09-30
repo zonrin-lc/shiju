@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>青史生存录 · 帛书版结局页</title>
+<link rel="stylesheet" href="silk.css">
+<style>
+#app{ position:absolute; inset:0; }
+#app .j1{ left:48px } #app .j2{ left:118px } #app .j3{ left:188px } #app .j4{ left:258px }
+
+.wrap{ position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:50px 18px 14px; }
+
+/* —— 结局印 + 结局名（横排题名，竖排副题） —— */
+.head{ flex:none; display:flex; align-items:flex-start; gap:14px; }
+.seal{ width:70px; flex:none; }
+.head .ht{ flex:1; min-width:0; padding-top:2px; }
+.tag{
+  display:inline-block; font-size:10px; letter-spacing:.3em; color:var(--zhu);
+  border:1px solid var(--zhu); border-radius:1px; padding:2px 7px; margin-bottom:8px;
+}
+.ename{ font-size:29px; letter-spacing:.16em; color:var(--ink-1); line-height:1.2; }
+.grade{ margin-top:7px; font-size:11px; color:var(--ink-3); letter-spacing:.16em; }
+.grade b{ font-size:18px; color:var(--tu); font-weight:400; }
+.achnew{
+  margin-top:9px; display:inline-block; font-size:10.5px; color:var(--tu);
+  border:1px dashed var(--tu); border-radius:1px; padding:4px 8px; letter-spacing:.06em;
+}
+
+/* —— 史传：竖排，自右向左起读（本作的招牌） —— */
+.zhuan{ flex:none; margin-top:14px; display:flex; flex-direction:row-reverse; gap:11px;
+        padding:13px 13px 13px 11px; background:rgba(255,252,244,.5);
+        border:1px solid var(--silk-3); border-radius:1px; }
+.zhuan .col{ writing-mode:vertical-rl; text-orientation:upright;
+  font-size:12.5px; line-height:1.62; letter-spacing:.12em; color:var(--ink-1);
+  block-size:auto; inline-size:128px; }        /* 每列 128px ≈ 10 字，整句断在列尾 */
+.zhuan .col b{ font-weight:400; color:var(--zhu-d); }
+.zhuan .sig{ writing-mode:vertical-rl; text-orientation:upright;
+  font-size:11px; letter-spacing:.26em; color:var(--ink-3); inline-size:auto; align-self:flex-start; }
+
+.alive{ flex:none; margin-top:7px; font-size:10.5px; color:var(--qing); letter-spacing:.1em; }
+
+/* —— 评分 —— */
+.sec{ flex:none; display:flex; align-items:center; gap:9px; margin:14px 0 8px;
+      font-size:10.5px; letter-spacing:.4em; color:var(--ink-3); }
+.sec::after{ content:''; flex:1; height:1px; background:var(--jie-c); }
+
+.score{ flex:none; display:flex; gap:12px; align-items:center; }
+.radar{ width:126px; height:126px; flex:none; }
+.slines{ flex:1; min-width:0; }
+.sline{ display:flex; align-items:baseline; justify-content:space-between;
+  font-size:11.5px; padding:4px 0; border-bottom:1px dashed var(--silk-3);
+  letter-spacing:.14em; color:var(--ink-2); }
+.sline b{ color:var(--ink-1); font-weight:400; font-size:13px; font-variant-numeric:tabular-nums; }
+.total{ display:flex; align-items:baseline; gap:8px; margin-top:9px; padding-top:8px; border-top:1px solid var(--silk-4); }
+.total .lb{ flex:1 1 auto; min-width:0; font-size:10px; letter-spacing:.14em; color:var(--ink-3); }
+.total .num{ flex:none; font-size:25px; color:var(--tu); line-height:1; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+/* —— 复盘：竖格中的两段对照 —— */
+.rev{ flex:none; display:flex; flex-direction:column; gap:7px; }
+.rv{ display:flex; align-items:flex-start; gap:9px; font-size:11.5px; line-height:1.7; }
+.rv .dot{ width:6px; height:6px; border-radius:50%; background:var(--zhu); margin-top:6px; flex:none; }
+.rv .n{ font-size:9.5px; color:var(--ink-3); letter-spacing:.12em; }
+.rv .y{ color:var(--ink-1); }
+.rv .h{ color:var(--ink-3); font-size:10.5px; }
+.rv .h s{ text-decoration:line-through; text-decoration-color:var(--silk-4); }
+.rv .dv{ color:var(--zhu-d); font-size:10.5px; }
+
+.epi{ flex:none; margin-top:12px; font-size:11.5px; line-height:1.95; color:var(--ink-2);
+  border-left:2px solid var(--qing); padding-left:11px; text-align:justify; }
+
+.acts{ flex:none; margin-top:auto; padding-top:14px; display:flex; gap:8px; }
+.btn{ flex:1; text-align:center; font-family:inherit; font-size:13px; letter-spacing:.24em;
+  padding:10px 0; border-radius:1px; cursor:pointer; background:var(--silk-2);
+  border:1px solid var(--silk-4); color:var(--ink-2); }
+.btn.pri{ background:var(--zhu-w); border-color:var(--zhu); color:var(--zhu-d); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <div class="notch"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="r">
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="#544a37"><path d="M7 9.6 1.2 4.1a8 8 0 0 1 11.6 0Z"/><circle cx="7" cy="4.2" r="1.5" fill="#eae0c6"/></svg>
+        <span style="width:20px;height:10px;border:1px solid #8b7f66;border-radius:2px;position:relative;display:inline-block">
+          <span style="position:absolute;inset:1px;width:70%;background:#544a37;border-radius:1px;display:block"></span></span>
+      </span>
+    </div>
+
+    <div id="app">
+      <div class="silk"></div>
+      <div class="jie j1"></div><div class="jie j2"></div><div class="jie j3"></div><div class="jie j4"></div>
+
+      <div class="wrap">
+        <!-- 印 + 结局名 -->
+        <div class="head">
+          <img class="seal" src="../../qingshi-prototype/assets/seals/seal_nitian.png" alt="逆天">
+          <div class="ht">
+            <div class="tag">逆 天 · 普通难度</div>
+            <div class="ename">权倾二世</div>
+            <div class="grade">评级 <b>S</b></div>
+            <div class="achnew">成就解锁 ｜ 破壁倒秦</div>
+          </div>
+        </div>
+
+        <!-- 史传：竖排，自右向左 -->
+        <div class="zhuan">
+          <div class="sig">太史公曰</div>
+          <div class="col">斯知其意，而不能明其量。<b>始皇崩</b>，二世相斯，一切法令出于其手。</div>
+          <div class="col">及其身也，具五刑，终死于市。天下归罪于斯，<b>然其功不可没</b>。</div>
+        </div>
+        <div class="alive">韩非尚存，士林念之——史评 +10</div>
+
+        <!-- 评分 -->
+        <div class="sec">评 分</div>
+        <div class="score">
+          <canvas class="radar" id="radar" width="252" height="252"></canvas>
+          <div class="slines">
+            <div class="sline"><span>功业</span><b>96</b></div>
+            <div class="sline"><span>存续</span><b>40</b></div>
+            <div class="sline"><span>史评</span><b>74</b></div>
+            <div class="sline"><span>影响</span><b>97</b></div>
+          </div>
+        </div>
+        <div class="total"><span class="lb">总分（含难度与逆天加成）</span><span class="num">97</span></div>
+
+        <!-- 复盘 -->
+        <div class="sec">复 盘</div>
+        <div class="rev">
+          <div class="rv"><span class="dot"></span><span>
+            <span class="n">抉择 2 ｜ 2-2 初见秦王</span><br>
+            <span class="y">献「灭诸侯、成帝业」之策</span>　<span class="h">史实：<s>先谈富国强兵</s></span>　<span class="dv">+0</span>
+          </span></div>
+          <div class="rv"><span class="dot"></span><span>
+            <span class="n">抉择 3 ｜ 4-4 书同文</span><br>
+            <span class="y">倾力推行，亲定范式</span>　<span class="h">史实：<s>委之属吏</s></span>　<span class="dv">+5</span>
+          </span></div>
+        </div>
+
+        <div class="epi">史官的笔追不上你——从某个抉择开始，这成了一段无人见过的新历史。</div>
+
+        <div class="acts">
+          <button class="btn pri">分 享 此 局</button>
+          <button class="btn">再 入 此 局</button>
+          <button class="btn">返 回 主 页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption"><b>03 · 结局页（帛书版）</b>　竖排史传（本页招牌）＋ 四维 ＋ 复盘对照 ＋ 朱印按钮</div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('radar'), x=c.getContext('2d');
+  var S=126, cx=S/2, cy=S/2, R=34;
+  var keys=['gongye','cuncun','shiping','yingxiang'];
+  var labels=['功业','存续','史评','影响'];
+  var vals={gongye:96,cuncun:40,shiping:74,yingxiang:97};
+  c.width=S*2; c.height=S*2; x.scale(2,2);
+  x.strokeStyle='#d2c2a0'; x.lineWidth=1; x.fillStyle='#8b7f66';
+  x.font='12.5px "Noto Serif SC",serif'; x.textAlign='center'; x.textBaseline='middle';
+  [0.25,0.5,0.75,1].forEach(function(f){
+    x.beginPath();
+    for(var i=0;i<=4;i++){ var a=-Math.PI/2+(i%4)*Math.PI/2, px=cx+Math.cos(a)*R*f, py=cy+Math.sin(a)*R*f; i?x.lineTo(px,py):x.moveTo(px,py); }
+    x.closePath(); x.stroke();
+  });
+  for(var i=0;i<4;i++){
+    var a=-Math.PI/2+i*Math.PI/2;
+    x.beginPath(); x.moveTo(cx,cy); x.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R); x.stroke();
+    var vert=(i===0||i===2);
+    x.fillText(labels[i], cx+Math.cos(a)*(R+(vert?12:16)), cy+Math.sin(a)*(R+(vert?10:0)));
+  }
+  x.beginPath();
+  for(var i=0;i<=4;i++){
+    var k=keys[i%4], a=-Math.PI/2+(i%4)*Math.PI/2, r=R*Math.max(0.04, vals[k]/100);
+    var px=cx+Math.cos(a)*r, py=cy+Math.sin(a)*r;
+    i?x.lineTo(px,py):x.moveTo(px,py);
+  }
+  x.closePath(); x.fillStyle='rgba(163,124,60,.24)'; x.fill();
+  x.strokeStyle='#a37c3c'; x.lineWidth=1.6; x.stroke();
+  for(var i=0;i<4;i++){
+    var k=keys[i], a=-Math.PI/2+i*Math.PI/2, r=R*(vals[k]/100);
+    x.beginPath(); x.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 2.6, 0, Math.PI*2);
+    x.fillStyle='#a37c3c'; x.fill();
+  }
+})();
+</script>
+</html>
