@@ -1,6 +1,6 @@
 /* js/ui-core.js —— 基础工具与共享状态（自 index.html 内联脚本原样搬移，行为零变化） */
 
-  var APP_VERSION = '1.6.8';   // 界面版本号唯一来源（与 package.json version 同步，test-ui-contract.js 校验）
+  var APP_VERSION = '1.7.0';   // 界面版本号唯一来源（与 package.json version 同步，test-ui-contract.js 校验）
   var D = window.GAME_DATA, E = window.QINGSHI_ENGINE;
 
   var selScen = 'lisi', selDiff = 'normal';
@@ -86,6 +86,7 @@
   /* 跨会话存档（GDD 6.4）：章首存档点，引擎 exportSave/importSave 出纯数据，存取归 UI（按剧本分区） */
   function saveGame(){
     if (!game) return;
+    if (game.d.SCENARIO.id === 'fate') return;   // 随机命局：每局即一生，不写跨会话存档（GDD 附录 R.3）
     var sv = game.exportSave();   // 硬核/无快照返回 null，不写
     if (sv) try { localStorage.setItem('qingshi_save_v1_' + game.d.SCENARIO.id, JSON.stringify(sv)); } catch(e){}
   }
