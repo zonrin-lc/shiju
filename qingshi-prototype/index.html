@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>青史生存录</title>
 <style>
+  /* 黄令东齐伋体（原字体 38.8MB / 20971 字，仅含 CJK 统一表意字，无拉丁与标点）。
+     已按项目实际用字子集化为 2838 字（woff2 2.1MB / ttf 4.3MB），见 tools/subset-font.py。
+     数字与标点该字体没有，由后面的后备字体接管。
+     font-weight 声明为 100 900：原字体只有 Regular 一个字重，
+     这样浏览器不会对粗体做「伪加粗」糊边。 */
+  @font-face{
+    font-family:"QIJIFALLBACK";
+    src:url("assets/fonts/qijifallback.woff2") format("woff2"),
+        url("assets/fonts/qijifallback.ttf") format("truetype");
+    font-weight:100 900; font-style:normal; font-display:swap;
+  }
   :root{
     --bg:#17140f; --panel:#221d15; --panel2:#2a241a; --ink:#e8dfc8; --ink-dim:#a89a7c;
     --zhu:#b0432f; --gold:#c9a959; --qing:#7fa8a0; --orange:#c97a3a;
@@ -15,7 +26,7 @@
   html,body{height:100%; height:100dvh}
   body{
     background:#0d0b08; color:var(--ink);
-    font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+    font-family:"QIJIFALLBACK","Noto Serif SC","Songti SC","STSong","SimSun",serif;
     display:flex; justify-content:center; overflow:hidden;
   }
   #app{width:100%; max-width:480px; height:100%; height:100dvh; background:var(--bg); position:relative;
@@ -173,9 +184,10 @@
     cursor:grab; touch-action:pan-y; -webkit-user-select:none; user-select:none;
   }
   .dynStrip:active{cursor:grabbing}
-  /* 朱印与刻度同处一条轨道内、绝对叠在当前刻度上 → 天然对齐，不需各算 top */
+  /* 刻度带：left 需回退半个刻度宽(52px)，否则第 0 格的「中心」落在屏心右侧 52px，
+     与居中的 .dynSealTrack 错开半格 —— 吸附定位就会偏。 */
   .dynTrack{
-    position:absolute; left:50%; top:0; height:115px;
+    position:absolute; left:calc(50% - 52px); top:0; height:115px;
     display:flex; align-items:center; will-change:transform;
   }
   .dynTick{
@@ -186,20 +198,52 @@
     transition:opacity .3s, color .3s;
   }
   .dynTick.open{ color:#6b6459; opacity:.85; }
+  /* 当前刻度被朱印盖住：隐藏其字，避免与印内文字重影 */
+  .dynTick.cur{ opacity:0; }
 
-  /* 朱印：红框图 221×244（≈正方 ratio .906）。object-fit:contain 保证笔触绝不变形 */
+  /* 朱印：红框图 221×244（≈正方 ratio .906）。object-fit:contain 保证笔触绝不变形。
+     这条轨道黏在当前朝代的刻度上：静止时偏移 0（居中），滑动时随朝代一起走。 */
+  .dynSealTrack{
+    position:absolute; left:0; right:0; top:0; height:115px;
+    display:flex; justify-content:center; pointer-events:none; will-change:transform;
+  }
   .dynSeal{
-    position:absolute; left:52px; top:0;      /* 盖在 track 内第 0 刻度（即当前朝代）上 */
-    width:104px; height:115px; z-index:2;
+    position:relative; width:104px; height:115px; pointer-events:auto;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .dynSeal img{ position:absolute; inset:0; width:104px; height:115px; object-fit:contain; }
   .dynSeal span{ position:relative; font-size:26px; font-weight:700; letter-spacing:10px; text-indent:10px; color:#7a2b1d; }
-  .dynSeal.locked{ cursor:default; }
-  .dynSeal.locked img{ opacity:.3; filter:grayscale(1); }
-  .dynSeal.locked span{ color:#8d8578; font-weight:400; }
+  /* 未开放：红框转灰但保留可见轮廓（不可见会让人以为指针丢了），字转为可读的淡墨 */
+  .dynSeal.locked{ cursor:pointer; }
+  .dynSeal.locked img{ opacity:.45; filter:grayscale(1); }
+  .dynSeal.locked span{ color:#6f6858; font-weight:400; }
 
-  .dynEra{ margin-top:18px; text-align:center; font-size:11px; letter-spacing:3px; color:#7d7568; }
+  /* 年代线：刻度带的「注脚」。整条随卷轴同步横移，中心菱形指针固定不动，
+     于是指针始终压在当前朝代那一段上 —— 滑动时年代读数随之变化。 */
+  .dynAxis{ position:relative; height:40px; margin-top:2px; overflow:hidden; }
+  .dynAxis::before{ content:''; position:absolute; left:0; right:0; top:12px; height:1px;
+                    background:rgba(90,82,72,.3); }
+  .dynAxisTrack{ position:absolute; left:calc(50% - 52px); top:0; height:40px;
+                 display:flex; will-change:transform; }
+  .dynAxisCell{ flex:none; width:104px; position:relative; padding-top:20px; text-align:center;
+                font-size:10px; letter-spacing:1px; color:#8d8578; opacity:.55; white-space:nowrap;
+                transition:opacity .3s, color .3s; }
+  .dynAxisCell::before{ content:''; position:absolute; left:50%; top:8px; width:1px; height:8px;
+                        background:currentColor; }
+  .dynAxisCell.cur{ opacity:1; color:#7a2b1d; font-weight:600; }
+  .dynAxisMark{ position:absolute; left:50%; top:7px; width:10px; height:10px; margin-left:-5px;
+                box-sizing:border-box; border:1px solid #7a2b1d; background:#efe9de;
+                transform:rotate(45deg); }
+
+  /* 立即启程：朱砂描边，呼应红印 */
+  .goBtn{ display:block; width:60%; max-width:238px; margin:20px auto 0; padding:13px 0;
+          font-family:inherit; font-size:17px; letter-spacing:8px; text-indent:8px; color:#7a2b1d;
+          background:rgba(122,43,29,.05); border:1px solid rgba(122,43,29,.5); border-radius:2px;
+          cursor:pointer; }
+  .goBtn:active{ background:rgba(122,43,29,.16); }
+  .goBtn.off{ color:#8d8578; border-color:rgba(141,133,120,.45); background:rgba(141,133,120,.05); }
+  @keyframes goNudge{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .goBtn.nudge{ animation:goNudge .28s ease-in-out; }
   .homeTitleImg img{width:78%; max-width:340px}
   .startImgBtn{display:block; width:78%; max-width:300px; margin:14px auto 4px; background:none; border:none; padding:0; cursor:pointer}
   .startImgBtn img{width:100%; display:block}

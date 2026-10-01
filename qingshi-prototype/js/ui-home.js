@@ -9,8 +9,9 @@
   }
 
   /* ---------- 主页（v1.6.9 两级化：朝代页 → 剧本页） ----------
-   * 朝代页：游戏名 + 卷轴式朝代选择（当前朝代居中朱印，左右露角可横移切换；
-   *   仅秦可玩，汉唐宋明为占位，滑到不可用朝代时阻尼回弹）；
+   * 朝代页：游戏名 + 卷轴式朝代选择（当前朝代居中朱印，左右露角可横移切换）。
+   *   五个朝代均可选中；仅秦有剧本，未开放者点「立即启程」只作提示。
+   * 年代线：随卷轴同步横移，中心菱形指针固定，压住当前朝代的起讫年份。
    * 点秦 → 剧本页：剧本选择 + 难度选择 + 入局 + 继续（存档）。 */
   var homeStage = 'dynasty';
   var selFate = false;   // 剧本页是否选中「随机命局」（v1.7.0）
@@ -37,6 +38,8 @@
   /* ---------- 朝代页：卷轴横移选择 ----------
    * 布局：一条横向刻度带，5 个朝代等距排列；卷面可拖动，松手吸附到最近刻度。
    * 当前朝代居中且盖红印；相邻朝代露出窄条；不可用（未开放）朝代字为淡墨且阻尼不可停。 */
+  var dynUI = null;         // 年代线 / 启程按钮的 DOM 引用，供 dynGo 就地更新（避免整页重绘打断手势）
+
   function renderDynastyPage(){
     main.appendChild(el('div','homeTitleImg zhi','<img src="assets/ui/title_zhi.png" alt="青史志">'));
     main.appendChild(el('div','homeSub ink','悠悠千载　青史万卷<br>若置身棋局　当如何落子'));
@@ -46,78 +49,105 @@
     var strip = el('div','dynStrip');
     var track = el('div','dynTrack');
     DYNASTIES.forEach(function(d, i){
-      var t = el('div','dynTick'+(d.open ? ' open':'') , d.name);
+      var t = el('div','dynTick'+(d.open ? ' open':'')+(i === dynIdx ? ' cur':''), d.name);
       t.dataset.i = i;
-      t.onclick = function(){ dynGo(i, true); };
+      t.onclick = function(){ dynGo(i); };
       track.appendChild(t);
     });
-    // 朱印：置于 track 首位（left:52px 即第 0 刻度中央），随卷面同步横移
-    var seal = el('div','dynSeal');
+    // 朱印：独立轨道。它黏在当前朝代的刻度上 —— 静止时居中，滑动时随朝代一起走
+    var sealTrack = el('div','dynSealTrack');
+    var seal = el('div','dynSeal' + (cur.open ? '' : ' locked'));
     seal.innerHTML = '<img src="assets/ui/frame_red.png" alt=""><span>'+esc(cur.name)+'</span>';
-    if (cur.open) seal.onclick = function(){ homeStage = 'scen'; renderHome(); };
-    else seal.className = 'dynSeal locked';
-    track.insertBefore(seal, track.firstChild);
+    sealTrack.appendChild(seal);
+    strip.appendChild(sealTrack);
     strip.appendChild(track);
     main.appendChild(strip);
 
-    // 说明随当前朝代变化
-    var note = cur.open ? '秦　现在就启程' : cur.name + '　敬请期待';
-    main.appendChild(el('div','homeSub ink soon', note));
-    main.appendChild(el('div','dynEra', esc(cur.era)));
+    // 年代线：整条与刻度带同步横移，中心菱形指针固定 → 指针始终压住当前朝代那一段
+    var axis = el('div','dynAxis');
+    var axisTrack = el('div','dynAxisTrack');
+    var axisCells = DYNASTIES.map(function(d, i){
+      var c = el('div','dynAxisCell'+(i === dynIdx ? ' cur':''), esc(d.era));
+      axisTrack.appendChild(c);
+      return c;
+    });
+    axis.appendChild(axisTrack);
+    axis.appendChild(el('div','dynAxisMark'));
+    main.appendChild(axis);
+
+    // 立即启程：仅已开放朝代可入局，其余明示「暂未开启」
+    var go = el('button','goBtn' + (cur.open ? '' : ' off'), cur.open ? '立 即 启 程' : '暂 未 开 启');
+    main.appendChild(go);
+
+    dynUI = { ticks: track.children, axisCells: axisCells, seal: seal, go: go };
+    /* 未开放朝代：点红印或点按钮都只是「晃一下」提示，不放行。
+       注意读的是实时 dynIdx —— 不可闭包捕获渲染时的 cur，否则切换朝代后判断会失真。 */
+    var tryGo = function(){
+      if (DYNASTIES[dynIdx].open){ homeStage = 'scen'; renderHome(); } else nudgeGo();
+    };
+    seal.onclick = tryGo;
+    go.onclick = tryGo;
 
     bindDynScroll(strip, track);
     dynLayout(true);
   }
 
+  /* 「暂未开启」反馈：按钮左右轻晃 */
+  function nudgeGo(){
+    if (!dynUI) return;
+    var b = dynUI.go;
+    b.classList.remove('nudge'); void b.offsetWidth;   // 强制重排以重启动画
+    b.classList.add('nudge');
+  }
+
   /* 卷面位置 → 刻度偏移（像素） */
   function dynOffset(){ return -(dynIdx - DYN_ON) * DYN_STEP; }
 
-  /* 应用当前卷面位移到刻度带（朱印在 track 内，随之同步，无需单独处理） */
+  /* 应用当前卷面位移。
+     刻度带与年代线取同值；红印则黏在当前朝代上 —— 静止时偏移恒为 0（正好居中），
+     切换/松手回弹时它随手指一起滑过去，再滑回屏心。 */
   function dynLayout(instant){
-    var track = main.querySelector('.dynTrack');
-    if (!track) return;
-    track.style.transition = instant ? 'none' : 'transform .38s cubic-bezier(.22,.61,.36,1)';
-    track.style.transform = 'translateX(' + dynOffset() + 'px)';
+    var off = dynOffset();
+    var tr = instant ? 'none' : 'transform .38s cubic-bezier(.22,.61,.36,1)';
+    ['.dynTrack', '.dynAxisTrack'].forEach(function(sel){
+      var n = main.querySelector(sel);
+      if (n){ n.style.transition = tr; n.style.transform = 'translateX(' + off + 'px)'; }
+    });
+    var seal = main.querySelector('.dynSealTrack');
+    if (seal){ seal.style.transition = tr; seal.style.transform = 'translateX(0px)'; }
   }
 
-  /* 切换到第 i 个朝代。fromUser=true 时对不可开放朝代做阻尼回弹。 */
-  function dynGo(i, fromUser){
+  /* 切换到第 i 个朝代。所有朝代均可选中（尚未开放的只是无剧本，提示「暂未开启」）。 */
+  function dynGo(i){
     i = Math.max(0, Math.min(DYNASTIES.length - 1, i));
-    if (fromUser && !DYNASTIES[i].open){
-      // 阻尼：轻微右推后回弹到原位，提示「尚未开放」
-      var track = main.querySelector('.dynTrack');
-      if (track){
-        track.style.transition = 'transform .16s ease-out';
-        track.style.transform = 'translateX(' + (dynOffset() + (i > dynIdx ? 16 : -16)) + 'px)';
-        setTimeout(function(){ dynLayout(true); dynGo(dynIdx, false); }, 170);
-      }
-      return;
-    }
     dynIdx = i;
-    // 更新朱印文字与可点状态
-    var seal = main.querySelector('.dynSeal');
-    if (seal){
-      var cur = DYNASTIES[dynIdx];
-      seal.querySelector('span').textContent = cur.name;
-      seal.className = cur.open ? 'dynSeal' : 'dynSeal locked';
-      seal.onclick = cur.open ? function(){ homeStage = 'scen'; renderHome(); } : null;
-    }
-    // 说明与年代
-    var cur2 = DYNASTIES[dynIdx];
-    var note = main.querySelector('.homeSub.soon');
-    if (note) note.textContent = cur2.open ? '秦　现在就启程' : cur2.name + '　敬请期待';
-    var era = main.querySelector('.dynEra');
-    if (era) era.textContent = cur2.era;
+    var cur = DYNASTIES[dynIdx];
+    var u = dynUI;
+    if (!u) return;
+    // 朱印：文字、配色、可点状态
+    u.seal.querySelector('span').textContent = cur.name;
+    u.seal.className = 'dynSeal' + (cur.open ? '' : ' locked');
+    // 当前刻度随朱印移动 → 字隐去，避免与印内文字重影
+    for (var ti = 0; ti < u.ticks.length; ti++) u.ticks[ti].classList.toggle('cur', ti === dynIdx);
+    // 年代线：指针固定，读数随之高亮
+    for (var ai = 0; ai < u.axisCells.length; ai++) u.axisCells[ai].classList.toggle('cur', ai === dynIdx);
+    // 立即启程：已开放可入局，其余明示暂未开启
+    u.go.className = 'goBtn' + (cur.open ? '' : ' off');
+    u.go.textContent = cur.open ? '立 即 启 程' : '暂 未 开 启';
     dynLayout(false);
   }
 
-  /* 手势：拖动卷面，松手吸附到最近刻度；越界（不可用）时阻尼 */
+  /* 手势：拖动卷面，松手吸附到最近刻度；拖到首/末朝代之外时阻尼（拉不动） */
+  var dynCleanup = null;
   function bindDynScroll(strip, track){
-    var x0 = null, y0 = null, dx = 0, moved = false, locked = false;
+    if (dynCleanup) dynCleanup();          // 重新渲染前先摘掉上一轮的 window 监听
+    var sealTrack = strip.querySelector('.dynSealTrack');
+    var x0 = null, y0 = null, dx = 0, moved = false, justDragged = false, dragTimer = 0;
     function down(e){
       var p = e.touches ? e.touches[0] : e;
-      x0 = p.clientX; y0 = p.clientY; dx = 0; moved = false; locked = false;
+      x0 = p.clientX; y0 = p.clientY; dx = 0; moved = false;
       track.style.transition = 'none';
+      if (sealTrack) sealTrack.style.transition = 'none';
     }
     function move(e){
       if (x0 === null) return;
@@ -134,19 +164,32 @@
       var raw = dynOffset() + dx;
       var min = -(DYNASTIES.length - 1 - DYN_ON) * DYN_STEP;
       var max = DYN_ON * DYN_STEP;
-      var over = 0;
-      if (raw > max){ over = raw - max; raw = max + over * 0.32; }
-      else if (raw < min){ over = raw - min; raw = min + over * 0.32; }
+      if (raw > max) raw = max + (raw - max) * 0.32;
+      else if (raw < min) raw = min + (raw - min) * 0.32;
       track.style.transform = 'translateX(' + raw + 'px)';
+      var ax = main.querySelector('.dynAxisTrack');   // 年代线与刻度带同步
+      if (ax) ax.style.transform = 'translateX(' + raw + 'px)';
+      /* 红印黏在当前朝代上：相对吸附点的位移 = raw - dynOffset()。
+         静止时为 0（居中），拖动时等于手指位移，于是红印跟着朝代一起走。 */
+      if (sealTrack) sealTrack.style.transform = 'translateX(' + (raw - dynOffset()) + 'px)';
     }
     function up(){
       if (x0 === null) return;
       x0 = null;
       if (!moved) return;                    // 轻点：交给 click 处理
+      /* 拖动收尾：只吞掉紧随其后的那一次 click（浏览器几乎同帧派发，250ms 足够）。
+         若抬手在 strip 外，浏览器可能根本不派发 click —— 此时不能把标记一直挂着，
+         否则下一次点朱印/点刻度会被吞掉（表现为「第一下点击没反应」）。故用时间窗兜底。 */
+      justDragged = true;
+      clearTimeout(dragTimer);
+      dragTimer = setTimeout(function(){ justDragged = false; }, 250);
       // 卷面实际停在 raw 处（已被阻尼裁剪），换算回目标刻度下标
       var raw = dynOffset() + dx;
       var t = Math.round(DYN_ON - raw / DYN_STEP);
-      dynGo(Math.max(0, Math.min(DYNASTIES.length - 1, t)), true);
+      dynGo(Math.max(0, Math.min(DYNASTIES.length - 1, t)));
+    }
+    function swallow(e){
+      if (justDragged){ e.stopPropagation(); e.preventDefault(); justDragged = false; }
     }
     strip.addEventListener('mousedown', down);
     strip.addEventListener('touchstart', down, { passive: true });
@@ -154,9 +197,19 @@
     window.addEventListener('touchmove', move, { passive: false });
     window.addEventListener('mouseup', up);
     window.addEventListener('touchend', up);
-    strip.addEventListener('click', function(e){
-      if (moved){ e.stopPropagation(); e.preventDefault(); moved = false; }
-    }, true);
+    strip.addEventListener('click', swallow, true);
+
+    dynCleanup = function(){
+      clearTimeout(dragTimer);
+      strip.removeEventListener('mousedown', down);
+      strip.removeEventListener('touchstart', down);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('touchmove', move);
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchend', up);
+      strip.removeEventListener('click', swallow, true);
+      dynCleanup = null;
+    };
   }
 
 

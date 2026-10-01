@@ -4,6 +4,16 @@
   var SEAL_IMG = {'循史':'seal_xunshi','苟活':'seal_gouhuo','稳健':'seal_wenjian','逆天':'seal_nitian','败局':'seal_baiju'};
   var shareBg = new Image(); shareBg.src = 'assets/bg/bg_share.jpg';
 
+/* 全局字体栈：黄令东齐伋体优先，数字/标点由后备字体接住（该字体只有 CJK 字形）。
+   canvas 不继承 CSS，必须显式写字体名；且要等字体真正加载完再落字，
+   否则会静默用后备字体画出一张字形不一致的分享卡。 */
+var UI_FONT = '"QIJIFALLBACK","Noto Serif SC","Songti SC","STSong","SimSun",serif';
+function uiFontReady(px, weight, sample){
+  if (!document.fonts || !document.fonts.check) return Promise.resolve();
+  return document.fonts.load((weight || '400') + ' ' + (px || 16) + 'px QIJIFALLBACK', sample || '青史')
+    .catch(function(){ return []; });
+}
+
   /* ---------- 章末结算页（GDD 5.4：偏离归因 + 属性总览 + 修正说明） ---------- */
   function renderSummary(s){
     ttsCancel();
@@ -103,12 +113,14 @@
   function drawRadar(wrap, s){
     var size = 210, c = document.createElement('canvas');
     c.width = size; c.height = size;
+    wrap.appendChild(c);                 // 先入 DOM，字体到位后再落笔，避免量到空图
+    uiFontReady(12, '400', '功业存续史评影响').then(function(){
     var ctx = c.getContext('2d');
     var cx = size/2, cy = size/2, R = 72;
     var keys = ['gongye','cuncun','shiping','yingxiang'];
     var labels = ['功业','存续','史评','影响'];
     ctx.strokeStyle = '#3a3226'; ctx.fillStyle = '#a89a7c';
-    ctx.font = '12px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font = '12px ' + UI_FONT; ctx.textAlign='center'; ctx.textBaseline='middle';
     [0.25,0.5,0.75,1].forEach(function(f){
       ctx.beginPath();
       for (var i=0;i<=4;i++){ var a=-Math.PI/2 + (i%4)*Math.PI/2; var x=cx+Math.cos(a)*R*f, y=cy+Math.sin(a)*R*f; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
@@ -129,7 +141,7 @@
     ctx.closePath();
     ctx.fillStyle='rgba(201,169,89,.25)'; ctx.fill();
     ctx.strokeStyle='#c9a959'; ctx.stroke();
-    wrap.appendChild(c);
+    });
   }
 
   /* ---------- 结局分享卡（GDD 11.3：结局名 + 史传节选 + 评级，canvas 直出 PNG） ---------- */
@@ -147,7 +159,7 @@
     var W = 480, H = 720, c = document.createElement('canvas');
     c.width = W; c.height = H;
     var x = c.getContext('2d');
-    var SERIF = '"Noto Serif SC","Songti SC","STSong",serif';
+    var SERIF = UI_FONT;
     if (shareBg.complete && shareBg.naturalWidth) x.drawImage(shareBg, 0, 0, W, H);
     else { x.fillStyle = '#17140f'; x.fillRect(0, 0, W, H); }
     x.textAlign = 'center';
@@ -176,6 +188,8 @@
     return c.toDataURL('image/png');
   }
   function showShareCard(en){
+    /* 等字体到位再生成，否则 canvas 会用后备字体画出字形不一致的卡片 */
+    uiFontReady(42, '400', en.name || '青史').then(function(){
     try {
       var url = drawShareCard(en);
       document.getElementById('shareImg').src = url;
@@ -187,4 +201,5 @@
       console.error('分享卡生成失败', e);
       showSettle('', '分享卡生成失败，请重试。', [], 0, null, null, function(){});
     }
+    });
   }
