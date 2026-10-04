@@ -309,7 +309,7 @@
           // GDD 2-2-C 设计备注：Flag【王知我】亲政后权势+10——本章“秦王亲政”，即在此兑现；
           // 三选项各挂一份 condAttrs，本章只经一次，无论选哪项都一次性结算
           options: [
-            { t: '全力经略，不问手段', hist: true, res: '六国的城墙还没倒，六国的朝堂先烂了。你的金丝和毒酒，比⟦王翦⟧的兵走得更快。捷报入咸阳时无人知晓缘故，只有你的图册上，一个又一个名字被朱笔勾去。', eff: { attrs: { quanshi: 8, junxin: 6, weiji: 5, moulue: 3 }, dev: 0, hist: -10,
+            { t: '全力经略，不问手段', hist: true, res: '六国的城墙还没倒，六国的朝堂先烂了。你的金丝和毒酒，比⟦王翦⟧的兵走得更快。捷报入咸阳时无人知晓缘故，只有你的图册上，一个又一个名字被朱笔勾去。', eff: { attrs: { quanshi: 8, junxin: 6, weiji: 5, moulue: 3, zhengji: 5 }, dev: 0, hist: -10,
               condAttrs: [ { if: { flag: 'wangzhiwo' }, attrs: { quanshi: 10 }, note: '亲政之日，大王想起了那一眼' } ] }, to: 'NEXT' },
             { t: '只做离间，不行刺杀', res: '你把“利剑”一条从方略里划去了，只留下金玉与谣言。进度慢了，嬴政催过一次，你答：迟剋者，其功完。夜里你睡得着——这在咸阳，是难得的奢侈。', eff: { attrs: { quanshi: 4, junxin: 3, shengwang: 3, moulue: 2 }, dev: 5, hist: 5,
               condAttrs: [ { if: { flag: 'wangzhiwo' }, attrs: { quanshi: 10 }, note: '亲政之日，大王想起了那一眼' } ] }, to: 'NEXT' },
@@ -447,7 +447,7 @@
                  '所有人都说完了。⟦嬴政⟧的目光落在你身上。',
                  '你知道那个目光的分量：它要的不是附和，是一句能压得住百年的话。'],
           options: [
-            { t: '独排众议：“置诸侯不便。”立郡县', hist: true, res: '“周文武所封子弟同姓甚众，然后属疏远，相攻击如仇雠。今海内赖陛下神灵一统，皆为⟦郡县⟧，天下无异意，则安宁之术也。”嬴政说：“善。”——此后两千年中国，皆行此制。散朝时没有人与你同车，你一个人走完了那段很长的甬道。', eff: { attrs: { quanshi: 8, junxin: 8, shengwang: 5, weiji: 8, biancai: 3 }, dev: 0, merit: '郡县' }, to: '4-4' },
+            { t: '独排众议：“置诸侯不便。”立郡县', hist: true, res: '“周文武所封子弟同姓甚众，然后属疏远，相攻击如仇雠。今海内赖陛下神灵一统，皆为⟦郡县⟧，天下无异意，则安宁之术也。”嬴政说：“善。”——此后两千年中国，皆行此制。散朝时没有人与你同车，你一个人走完了那段很长的甬道。', eff: { attrs: { quanshi: 8, junxin: 8, shengwang: 5, weiji: 8, biancai: 3, zhengji: 10 }, dev: 0, merit: '郡县' }, to: '4-4' },
             { t: '附和王绾，封建诸子', res: '你说了从众的话。散朝时王绾拍了拍你的肩，宗室们看你的眼神暖了许多。十年后，诸子争立，关中血溅——史书会记下：此议，丞相李斯亦预焉。那时你已经管不了史书的笔了。', eff: { attrs: { weiji: -8, quanshi: -5, junxin: -8 }, dev: 15, hist: -15 }, to: '4-4' },
             { t: '廷辩折儒——舌战淳于越', req: { biancai: 55 }, res: '博士⟦淳于越⟧抗声：“事不师古而能长久者，非所闻也。”你出列折之——从周室分封之祸，说到当今郡县之利，句句有出处，步步有归着。满殿无声。淳于越退下时，鞋跟蹭到了殿砖。', eff: { attrs: { junxin: 5, shengwang: 5, weiji: 3, biancai: 3 }, dev: 5 }, to: '4-4' }
           ] },
@@ -457,7 +457,7 @@
                  '这些竹简、车轮与秤锤，会比任何一个王朝活得都长。',
                  '有人说这是万世之功。你想的是另一件事：字都同了，就没有“异乡”了。'],
           options: [
-            { t: '倾力推行，亲定范式', hist: true, res: '你的小篆从咸阳铺到临淄、番禺、蓟城。奏事的吏员先学会，做生意的商人跟着学会，最后连骂你的人，骂出来的也是你定的字。千百年后，写字的人不知道你的名字，但写的是你定的笔顺。', eff: { attrs: { shengwang: 10, caixue: 5, quanshi: 5 }, dev: 0, merit: '书同文', ach: { id: 'shutongwen', if: { shengwang: 60 } } },
+            { t: '倾力推行，亲定范式', hist: true, res: '你的小篆从咸阳铺到临淄、番禺、蓟城。奏事的吏员先学会，做生意的商人跟着学会，最后连骂你的人，骂出来的也是你定的字。千百年后，写字的人不知道你的名字，但写的是你定的笔顺。', eff: { attrs: { shengwang: 10, caixue: 5, quanshi: 5, zhengji: 10 }, dev: 0, merit: '书同文', ach: { id: 'shutongwen', if: { shengwang: 60 } } },
               to: [ { if: { junxinMax: 30 }, to: '4-5-pre' }, { to: '4-5' } ] },
             { t: '委之属吏，自己专注权位', res: '事照样办成了，只是办得粗。齐地的老儒写信骂你“灭裂文字”，你把信烧了。灰烬飘出窗外的时候你想：字同不同，仓都是要满的——至于用字的人怎么想，那是他们的事。', eff: { attrs: { quanshi: 3, shengwang: -5 }, dev: 3 },
               to: [ { if: { junxinMax: 30 }, to: '4-5-pre' }, { to: '4-5' } ] }
@@ -627,7 +627,7 @@
                  '你有一篇《行⟦督责⟧之术书》在袖中——以严刑峻法悦上，固宠自保。写，还是不写。',
                  '竹简的边缘磨着你的袖口。写，是帮凶；不写，是逆鳞。你已经很久没有被给过好走的路了。'],
           options: [
-            { t: '上督责书', hist: true, res: '“贤主必能行⟦督责⟧之术……”二世大悦。税民深者为明吏，杀人众者为忠臣，刑者相半于道。你把大秦往深渊里，又推了一把。奏书颁行那天，咸阳的狱吏都不够用了——你经过西市，听见有人念你的文章，念得咬牙切齿。', eff: { attrs: { junxin: 10, quanshi: 5, weiji: 10, shengwang: -10, caixue: 3 }, dev: 0, hist: -15 }, to: '6-2' },
+            { t: '上督责书', hist: true, res: '“贤主必能行⟦督责⟧之术……”二世大悦。税民深者为明吏，杀人众者为忠臣，刑者相半于道。你把大秦往深渊里，又推了一把。奏书颁行那天，咸阳的狱吏都不够用了——你经过西市，听见有人念你的文章，念得咬牙切齿。', eff: { attrs: { junxin: 10, quanshi: 5, weiji: 10, shengwang: -10, caixue: 3, zhengji: 5 }, dev: 0, hist: -15 }, to: '6-2' },
             { t: '上书请减徭役、罢阿房', res: '书三上，三不报。第四次，⟦赵高⟧替你“转达”了——用他自己的措辞。二世对你的耐心，见底了。宫门关上的时候很轻，你站在门外，忽然想起很多年前，函谷关的关门也是这样，在身后合拢。', eff: { attrs: { junxin: -15, shengwang: 10, weiji: 15, caixue: 3 }, dev: 10, hist: 10 }, to: '6-2' },
             { t: '称病不朝，自污避祸', req: { caifu: 30 }, res: '你开始酗酒、治产、狎优，把“丞相”两个字泡在酒里。骂名你收下，刀子你躲过——暂时。老仆看你喝得烂醉，背过身去抹眼睛。你看见了，没有说破：这出戏，总得有人当真。', eff: { attrs: { weiji: -10, shengwang: -10, caifu: -10, junxin: -5, tupo: -3 }, dev: 8, flags: ['ziwu'] }, to: '6-2' }
           ] },
@@ -643,7 +643,7 @@
             { t: '携伪诏破绽，密奏二世', req: { flag: 'liuzheng' }, res: '你把两年前的笔误、印泥和人证，一样一样摆在⟦胡亥⟧面前，像摆出三枚藏了很久的棋子。年轻的皇帝脸色由红转白：“……中车府令安敢！”你垂手而立。两年前埋下的那根线，今夜终于勒紧——要么勒死⟦赵高⟧，要么勒死你自己。', eff: { attrs: { weiji: 30, moulue: 3 }, dev: 15 },
               // 基础危机+10 + 失败下狱追加 +20（GDD 8 章 6-2-C；成功即终局 E7，数值不再结算）；E7 另需偏离≥46（GDD 9.1）
               to: [ { if: { quanshi: 70, junxin: 40, devMin: 46 }, to: { ending: 'E7' } }, { to: '6-3' } ] },
-            { t: '历陈政绩，请归相印', req: { zhengji: 55 }, res: '你把二十年的账一本一本摆出来——书同文、车同轨、郡县、律令。然后说：臣老了，请归上蔡。二世准了。走出咸阳那天，你没有回头。', eff: { dev: 5 }, to: { ending: 'E4', variant: 'gongcheng' } }
+            { t: '历陈政绩，请归相印', req: { zhengji: 45 }, res: '你把二十年的账一本一本摆出来——书同文、车同轨、郡县、律令。然后说：臣老了，请归上蔡。二世准了。走出咸阳那天，你没有回头。', eff: { dev: 5 }, to: { ending: 'E4', variant: 'gongcheng' } }
           ] },
         { id: '6-3', title: '下狱',
           segs: ['二世二年七月，具斯⟦五刑⟧论，腰斩咸阳市——这道诏书的草稿，⟦赵高⟧已经拟好了。此刻，你在狱中。',
@@ -940,7 +940,7 @@
       res: '病假条递上去，朝堂少了一个靶子。探病的人来了几拨，真心难辨——送来的药材你都让医者验过，病是装的，防的心是真的。' },
     /* ---- 通用行动（v2：习武养身，全章可用） ---- */
     { id: 'ACT-49', name: '习剑强身', desc: '晨起习剑，筋骨与剑俱进', chapters: [0, 6],
-      eff: { attrs: { wuli: 2, tupo: 1, caifu: -1 }, dev: 0 },
+      eff: { attrs: { wuli: 3, tupo: 1, caifu: -1 }, dev: 0 },
       res: '你鸡鸣即起，庭前剑光起落三百回。汗水换了几身衣衫，臂上的力道却一日日攒了下来——剑是旧剑，使剑的人已不是从前那人。' },
     { id: 'ACT-50', name: '导引养生', desc: '调息导引，养精神于未衰', chapters: [0, 6],
       eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
@@ -1006,7 +1006,7 @@
       eff: { attrs: { caifu: -3, weiji: -3, moulue: 1 }, dev: 0 },
       res: '宫里哪一处正在得宠、哪一处正在失势，你比多数九卿知道得都早。宦者们的嘴按消息的分量收钱——你学会了分辨：哪句是金，哪句只是响。' },
     { id: 'ACT-21', name: '督办文书', desc: '躬亲簿领，以勤自效', chapters: [2, 2],
-      eff: { attrs: { quanshi: 3, weiji: 2, moulue: 1 }, dev: 0 },
+      eff: { attrs: { quanshi: 3, weiji: 2, moulue: 1, zhengji: 1 }, dev: 0 },
       res: '相邦府的积牍被你三日理清。⟦吕不韦⟧点点头，府中老吏的脸色却不大好看——理清的牍册码了半间屋，脸色的变化你也一并记了档。' },
     { id: 'ACT-22', name: '修书吕门', desc: '预修《吕氏春秋》之役（才学≥45 方能执笔）', req: { caixue: 45 }, chapters: [2, 2],
       eff: { attrs: { shengwang: 2, caixue: 1, weiji: 1 }, dev: 0 },
@@ -1043,9 +1043,9 @@
     { id: 'ACT-30', name: '倾囊结义', desc: '分金周急，收揽众心（财富-4）', req: { caifu: 4 }, chapters: [3, 3],
       eff: { attrs: { caifu: -4, shengwang: 3 }, dev: 0 },
       res: '同逐者中有盘缠断绝的，你解囊分赠。众人北面而揖：李先生不走，我等不散——分出去的是钱，收回来的是心，尽管难中的一揖，最贵也最容易忘。' },
-    { id: 'ACT-57', name: '操练门客', desc: '操练门客，势壮亦惹眼', chapters: [3, 3],
-      eff: { attrs: { wuli: 2, quanshi: 1, weiji: 1 }, dev: 0 },
-      res: '你在府中辟出一片空场，亲率门客操练拳棒。门下声势日壮，邻里的目光也日冷——一支私人的武力，是底气，也是话柄。' },
+    { id: 'ACT-57', name: '鬻字易米', desc: '鬻字易米，润笔糊口', chapters: [3, 3],
+      eff: { attrs: { caifu: 2, caixue: 1 }, dev: 0 },
+      res: '你的字在列国值钱了。驿亭的壁上、逆旅的牍上，识货的人照着笔迹找上门来——润笔不多，够一路的柴米。数钱那晚你想起兰陵的灯：原来笔墨不只济世，也能济己。' },
     { id: 'ACT-58', name: '风霜夜行', desc: '戴月夜行，风霜隐行踪', chapters: [3, 3],
       eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
       res: '你戴月披霜，夜行数十里。寒风刮面如刀，筋骨却越走越结实——夜色是最好的掩护，路上的脚印，天亮就没人认得。' },
@@ -1055,16 +1055,16 @@
       eff: { attrs: { caifu: -4, quanshi: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '几位九卿府上收下了你的重礼与热络。朝会时附和你的人多了，盯着你的人也多了——夜里你核对名录：谁可用，谁可防，谁只可远观。' },
     { id: 'ACT-32', name: '弹章政敌', desc: '疏劾异己，先声夺人', chapters: [4, 4],
-      eff: { attrs: { quanshi: 3, shengwang: -3, weiji: 4, moulue: 1 }, dev: 0 },
+      eff: { attrs: { quanshi: 3, shengwang: -3, weiji: 4, moulue: 1, zhengji: 1 }, dev: 0 },
       res: '你的弹章递上去，一名政敌左迁出京。朝堂安静了几日，然后你发现，看你的眼神都冷了——你把底稿烧了：出手要快，痕迹要少。' },
     { id: 'ACT-33', name: '巡视封邑', desc: '行县视事，威福自专', chapters: [4, 4],
       eff: { attrs: { caifu: 3, shengwang: 1, weiji: 3, wuli: 1 }, dev: 0 },
       res: '车骑行县，守令郊迎。租赋与孝敬一起入库，沿路百姓的议论也跟着进了咸阳——郊迎的队列跪了半里地，跪的是丞相，不是李斯。' },
     { id: 'ACT-34', name: '督办驰道', desc: '督课工程，以绩固宠（财富-3）', req: { caifu: 3 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -3, junxin: 2, weiji: 2, moulue: 1 }, dev: 0 },
+      eff: { attrs: { caifu: -3, junxin: 2, weiji: 2, moulue: 1, zhengji: 2 }, dev: 0 },
       res: '⟦驰道⟧又向东延了百里，御驾巡幸的路更平了。骊山脚下的徭役名册，也厚了一叠——验收那日你走了十里新道，路面平得能照见人影。' },
     { id: 'ACT-35', name: '修订律令', desc: '损益秦律，垂法后世（才学≥55 方能主笔）', req: { caixue: 55 }, chapters: [4, 4],
-      eff: { attrs: { caixue: 3, quanshi: 1, weiji: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 3, quanshi: 1, weiji: 2, zhengji: 2 }, dev: 0 },
       res: '你逐条校订律文，增损之间，天下人的祸福随之轻重。律令颁行之日，狱吏们又忙了起来——一条律文，是狱里几百人的寒暑，你落笔很慢。' },
     { id: 'ACT-36', name: '安抚楚士', desc: '怀柔故楚遗民（财富-3）', req: { caifu: 3 }, chapters: [4, 4],
       eff: { attrs: { caifu: -3, shengwang: 3, weiji: -1, biancai: 1 }, dev: 0 },
@@ -1095,9 +1095,9 @@
     { id: 'ACT-42', name: '缮写密奏', desc: '别途上达，绕开掖庭', chapters: [5, 5],
       eff: { attrs: { junxin: 2, moulue: 1 }, zg: 3, dev: 0 },
       res: '你绕开⟦中车府令⟧的渠道，把奏章送进了行宫的寝帐。⟦赵高⟧次日看你的眼神，像看一个死棋——死棋不死，被人当成死棋的人，才有机会走出活步。' },
-    { id: 'ACT-61', name: '亲巡营垒', desc: '亲巡营垒，甲仗立威严', chapters: [5, 5],
-      eff: { attrs: { wuli: 2, quanshi: 1, weiji: 1 }, dev: 0 },
-      res: '你亲巡营垒，查看甲仗粮储，军吏见你亲临，队列齐了几分。营门外多了几双盯着的眼睛——兵权这东西，碰一碰都有人记账。' },
+    { id: 'ACT-61', name: '变卖珍玩', desc: '鬻玉藏金，以充行用', chapters: [5, 5],
+      eff: { attrs: { caifu: 3, shengwang: -1 }, dev: 0 },
+      res: '随行的玉璧、吴绫、郢爰，一样一样换成了金饼。人言丞相落魄至此——你数着金饼，没有接话：钱是身外物，命是自己的，留得金饼在，不怕没药吃。' },
     { id: 'ACT-62', name: '强撑视事', desc: '扶病视事，权柄不敢松', chapters: [5, 5],
       eff: { attrs: { quanshi: 2, junxin: 1, tupo: -2 }, dev: 0 },
       res: '你强撑病体升堂视事，批阅如常，不肯让府中看出半分松动。夜里咳得直不起腰——权柄一松手，就不知道落到谁手里了。' },

@@ -1588,20 +1588,20 @@ function expect(name, actual, wantId, wantVariant) {
   if (cOk) { pass++; console.log('✔ 新分支 4-3「廷辩折儒」：辩才 54 转险招 / 55 直选 → 4-4'); }
   else { fail++; console.log('✘ 4-3 新分支异常：' + JSON.stringify({ low: cLow && !!cLow.risky, ev: gc.eventId })); }
 
-  // (d) 6-2 第 4 选项「历陈政绩，请归相印」req 政绩55 → E4 新变体「功成名遂」
+  // (d) 6-2 第 4 选项「历陈政绩，请归相印」req 政绩45（审计修正下调，原 55）→ E4 新变体「功成名遂」
   const gd = mkGame('normal', rngHigh);
   gd.randomOn = false; gd.start(); gd.enterChapter(6); gd.eventId = '6-2';
-  gd.attrs.zhengji = 54;
+  gd.attrs.zhengji = 44;
   gd.beginRounds(); gd.playCard(0); // 关键卡 → 6-2
   const dLow = gd.getOptions().find(o => o.opt.t.indexOf('历陈政绩') >= 0);
-  gd.attrs.zhengji = 55;
+  gd.attrs.zhengji = 45;
   const dIdx = gd.getOptions().findIndex(o => o.opt.t.indexOf('历陈政绩') >= 0);
   const dHigh = gd.getOptions()[dIdx];
   gd.choose(dIdx); gd.proceed();
   const dOk = dLow && !dLow.locked && dLow.risky && dLow.risky.rate === 70
     && dHigh && !dHigh.locked && !dHigh.risky
     && gd.ending && gd.ending.id === 'E4' && gd.ending.variant === 'gongcheng' && gd.ending.name === '功成名遂';
-  if (dOk) { pass++; console.log('✔ 新分支 6-2「历陈政绩，请归相印」：政绩 54 转险招 / 55 直选 → E4/gongcheng「功成名遂」'); }
+  if (dOk) { pass++; console.log('✔ 新分支 6-2「历陈政绩，请归相印」：政绩 44 转险招 / 45 直选 → E4/gongcheng「功成名遂」'); }
   else { fail++; console.log('✘ 6-2 新分支异常：' + JSON.stringify({ low: dLow && !!dLow.risky, end: gd.ending && (gd.ending.id + '/' + gd.ending.variant) })); }
 }
 
@@ -1617,6 +1617,32 @@ function expect(name, actual, wantId, wantVariant) {
   const ok = g.backtrack(); // 章首快照：无病、25 岁
   if (sick && ok === true && g.ill === null && g.age === 25) { pass++; console.log('✔ 回溯恢复病况：major/26 岁 → 章首快照（ill=null、25 岁）'); }
   else { fail++; console.log('✘ 回溯病况异常：sick=' + sick + ' ok=' + ok + ' ill=' + JSON.stringify(g.ill) + ' age=' + g.age); }
+}
+
+/* ---------- 66. 政绩经济（v1.9 审计修正）：卡侧恰 4 源 / 事件侧 hist 合计 30 / ACT-49 武力+3 / ch3·ch5 不再零财富源 ---------- */
+{
+  // (a) 行动卡 zhengji 源：恰 ACT-21/32/34/35 四张，值 1/1/2/2（6-2 gongcheng 可规划性的卡侧基础）
+  const zjCards = D.ACTIONS.filter(a => a.eff && a.eff.attrs && a.eff.attrs.zhengji).map(a => a.id + ':' + a.eff.attrs.zhengji).sort();
+  const cardsOk = JSON.stringify(zjCards) === JSON.stringify(['ACT-21:1', 'ACT-32:1', 'ACT-34:2', 'ACT-35:2']);
+  // (b) 事件侧 hist 政绩源：恰 2-4+5 / 4-3+10 / 4-4+10 / 6-1+5 四处，合计 30（≥30）
+  const zjEvents = [];
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji); })));
+  const zjSum = zjEvents.reduce((s, x) => s + Number(x.split(':')[1]), 0);
+  const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['2-4:5', '4-3:10', '4-4:10', '6-1:5'].slice().sort()) && zjSum >= 30;
+  if (cardsOk && eventsOk) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 4 源（' + zjCards.join('、') + '），事件侧 hist 恰 4 处合计 ' + zjSum + '（≥30）'); }
+  else { fail++; console.log('✘ 政绩经济异常：卡=' + zjCards.join('、') + ' 事件=' + zjEvents.join('、')); }
+  // (c) ACT-49 习剑强身：武力 +3（体魄+1、财富-1 不变）
+  const a49 = D.ACTIONS.find(a => a.id === 'ACT-49');
+  if (a49.eff.attrs.wuli === 3 && a49.eff.attrs.tupo === 1 && a49.eff.attrs.caifu === -1) { pass++; console.log('✔ ACT-49 习剑强身：武力+3（体魄+1 财富-1 不变）'); }
+  else { fail++; console.log('✘ ACT-49 异常：' + JSON.stringify(a49.eff.attrs)); }
+  // (d) ch3/ch5 章池不再零财富源：ACT-57 鬻字易米 caifu+2（ch3 专属）、ACT-61 变卖珍玩 caifu+3（ch5 专属）
+  const a57 = D.ACTIONS.find(a => a.id === 'ACT-57'), a61 = D.ACTIONS.find(a => a.id === 'ACT-61');
+  const ch3ok = a57.name === '鬻字易米' && a57.eff.attrs.caifu === 2 && a57.chapters[0] === 3 && a57.chapters[1] === 3;
+  const ch5ok = a61.name === '变卖珍玩' && a61.eff.attrs.caifu === 3 && a61.chapters[0] === 5 && a61.chapters[1] === 5;
+  const ch3src = D.ACTIONS.filter(a => a.chapters[0] <= 3 && 3 <= a.chapters[1] && a.eff && a.eff.attrs && a.eff.attrs.caifu > 0).length;
+  const ch5src = D.ACTIONS.filter(a => a.chapters[0] <= 5 && 5 <= a.chapters[1] && a.eff && a.eff.attrs && a.eff.attrs.caifu > 0).length;
+  if (ch3ok && ch5ok && ch3src > 0 && ch5src > 0) { pass++; console.log('✔ ch3/ch5 财富源：ACT-57 鬻字易米 caifu+2、ACT-61 变卖珍玩 caifu+3（两章不再零财富源）'); }
+  else { fail++; console.log('✘ ch3/ch5 财富源异常：' + JSON.stringify({ ch3ok, ch5ok, ch3src, ch5src })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);
