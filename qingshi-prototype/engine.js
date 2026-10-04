@@ -4,7 +4,8 @@
  *   每章：章首 intro → 回合循环（phase 'round'）→ 章末（endEvent/correction/summary）。
  *   每回合发 4 张卡：关键事件卡 ×1（当前 eventId，限时 KEY_CARD_ROUNDS 回合，
  *   倒计时归零未点则强制进入该事件抉择页——玩家阅读后必须亲自选择，不再自动循史）+ 普通行动卡 ×3
- *  （本章行动池随机抽取，同章重复使用同一行动收益递减）。剧本事件的决策流（getOptions/choose/proceed）
+ *  （本章行动池随机抽取；同章重复使用同一行动收益递减——剧本级开关 ACTION_RULES.diminish，
+ *   v1.9 李斯卡牌 v2 起关闭递减：池 16（8 通用 + 8 专属）、收益缩窄）。剧本事件的决策流（getOptions/choose/proceed）
  *   保持不变，只是事件不再自动接续，而是一律回到回合（round）重新发卡。
  */
 (function (root, factory) {
@@ -414,7 +415,8 @@
         if (cr.hardOk && cr.rate != null) risky = { rate: cr.rate, unmet: cr.unmet };
       }
       var used = self.actionUses[e.id] || 0;
-      return { type: 'action', action: a, locked: !c.ok, reason: c.reason || null, usedCount: used, diminishing: used > 0, risky: risky };
+      var noDim = self.d.ACTION_RULES && self.d.ACTION_RULES.diminish === false;
+      return { type: 'action', action: a, locked: !c.ok, reason: c.reason || null, usedCount: used, diminishing: !noDim && used > 0, risky: risky };
     });
   };
 
@@ -467,7 +469,9 @@
     }
     var useN = (this.actionUses[a.id] || 0) + 1;   // 本章第 n 次使用（n 从 1 计）
     this.actionUses[a.id] = useN;
-    var eff = failed ? { attrs: { weiji: 3 } } : this._scaleActionEff(a.eff || {}, useN);
+    // 收益递减为剧本级开关（v1.9，ACTION_RULES.diminish；false = 无递减，李斯卡牌 v2 起）
+    var noDim = this.d.ACTION_RULES && this.d.ACTION_RULES.diminish === false;
+    var eff = failed ? { attrs: { weiji: 3 } } : (noDim ? JSON.parse(JSON.stringify(a.eff || {})) : this._scaleActionEff(a.eff || {}, useN));
     var changes = this.applyEff(eff);
     // 疾病推进（v1.8，剧本 ILLNESS）：出牌即耗时日——已病者转归，未病者掷发病（ill 流）
     if (this.d.ILLNESS) this._tickIllness(changes);

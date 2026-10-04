@@ -396,7 +396,7 @@ function expect(name, actual, wantId, wantVariant) {
   if (g.maybeRandom() === null) { pass++; console.log('✔ 际遇每章上限生效'); } else { fail++; console.log('✘ 际遇上限失效'); }
 }
 
-/* ---------- 16. 行动卡：生效、收益递减（同章连用减半、代价不减）、getOffer 透出 usedCount/diminishing ---------- */
+/* ---------- 16. 行动卡：生效、无收益递减（卡牌 v2，ACTION_RULES.diminish=false——同卡连用收益逐次完全相同）、getOffer 透出 usedCount/diminishing ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start(); g.beginEvents();
@@ -408,23 +408,39 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ getOffer 透出异常：' + JSON.stringify(offer.slice(1).map(o => [o.action && o.action.id, o.usedCount, o.diminishing]))); }
   if (!g.check({ minChapter: 2 }).ok) { pass++; console.log('✔ 入宫请安（req minChapter:2）在序章不可用'); }
   else { fail++; console.log('✘ 入宫请安在序章应锁定'); }
-  // 收益递减：stub 发牌强制同一张 ACT-1（才学+4/声望+2/危机+2）连用两次
+  // 无递减（卡牌 v2）：stub 发牌强制同一张 ACT-1（才学+3/声望+1/危机+2）连用 3 次，收益逐次完全相同，useCount 仍计次
+  const deltas = [], useCounts = [];
+  for (let k = 0; k < 3; k++) {
+    g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }];
+    const r = g.playCard(1);
+    useCounts.push(r.useCount);
+    deltas.push(['caixue', 'shengwang', 'weiji'].map(kk => r.changes.find(c => c.k === kk).delta).join('/'));
+  }
+  if (useCounts.join(',') === '1,2,3' && deltas.every(d => d === '3/1/2')) { pass++; console.log('✔ 行动结算生效且无递减：ACT-1 连用 3 次收益逐次相同（才学+3/声望+1/危机+2），useCount 1→3 照计'); }
+  else { fail++; console.log('✘ 行动结算异常：' + JSON.stringify({ useCounts, deltas })); }
+  // 连用后 getOffer 透出：usedCount 照计，diminishing 恒 false（李斯无递减）
   g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }];
-  const r1 = g.playCard(1);
-  const d1cx = r1.changes.find(c => c.k === 'caixue'), d1sw = r1.changes.find(c => c.k === 'shengwang'), d1wj = r1.changes.find(c => c.k === 'weiji');
-  if (r1.useCount === 1 && d1cx.delta === 4 && d1sw.delta === 2 && d1wj.delta === 2) { pass++; console.log('✔ 行动结算生效（第 1 次全额：才学+4 声望+2 危机+2）'); }
-  else { fail++; console.log('✘ 行动结算异常：' + JSON.stringify(r1.changes)); }
-  // 第二次前 getOffer 透出 usedCount 1 / diminishing true
-  g.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-1' }];
-  const o2 = g.getOffer()[1];
-  if (o2.usedCount === 1 && o2.diminishing === true) { pass++; console.log('✔ 连用后 getOffer 透出 usedCount=1、diminishing=true'); }
-  else { fail++; console.log('✘ 递减透出异常：usedCount=' + o2.usedCount); }
-  const r2 = g.playCard(1);
-  const d2cx = r2.changes.find(c => c.k === 'caixue'), d2sw = r2.changes.find(c => c.k === 'shengwang'), d2wj = r2.changes.find(c => c.k === 'weiji');
-  if (r2.useCount === 2 && d2cx.delta === 2 && d2sw.delta === 1 && d2wj.delta === 2) { pass++; console.log('✔ 第 2 次收益减半（才学+4→+2、声望+2→+1），代价危机+2 不变'); }
-  else { fail++; console.log('✘ 递减规则异常：' + JSON.stringify(r2.changes)); }
-  // 行动不干扰事件流：关键事件仍是 0-1，回合并发新牌
-  if (g.phase === 'round' && g.eventId === '0-1') { pass++; } else { fail++; console.log('✘ 行动后事件流被打断：' + g.phase + ' ' + g.eventId); }
+  const oUsed = g.getOffer()[1];
+  if (oUsed.usedCount === 3 && oUsed.diminishing === false) { pass++; console.log('✔ 连用后 getOffer 透出 usedCount=3、diminishing 恒 false（无递减）'); }
+  else { fail++; console.log('✘ 递减透出异常：usedCount=' + oUsed.usedCount + ' diminishing=' + oUsed.diminishing); }
+  // 行动不干扰事件流：关键事件仍是 0-1（第 3 张触发倒计时归零强制抉择，phase 转 event 属预期，见 #44）
+  if ((g.phase === 'round' || g.phase === 'event') && g.eventId === '0-1') { pass++; } else { fail++; console.log('✘ 行动后事件流被打断：' + g.phase + ' ' + g.eventId); }
+}
+
+/* ---------- 16b. 收益递减跨剧本对照：荆轲本未声明 ACTION_RULES，引擎递减开关保留（第 2 次减半、代价不减、diminishing=true） ---------- */
+{
+  const J = require('./jingke-data.js');
+  const gj = new E.Game(J, 'normal', rngHigh);
+  gj.randomOn = false; gj.start(); gj.beginEvents();
+  gj.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }]; // 著书立说：才学+4/声望+2/危机+2
+  const j1 = gj.playCard(1);
+  gj.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }];
+  const jo2 = gj.getOffer()[1];
+  const j2 = gj.playCard(1);
+  const d1cx = j1.changes.find(c => c.k === 'caixue').delta, d2cx = j2.changes.find(c => c.k === 'caixue').delta;
+  const d1wj = j1.changes.find(c => c.k === 'weiji').delta, d2wj = j2.changes.find(c => c.k === 'weiji').delta;
+  if (d1cx === 4 && d2cx === 2 && d1wj === 2 && d2wj === 2 && jo2.usedCount === 1 && jo2.diminishing === true) { pass++; console.log('✔ 跨剧本对照：荆轲未声明 ACTION_RULES，递减保留（才学+4→+2、代价危机+2 不减、diminishing=true）'); }
+  else { fail++; console.log('✘ 荆轲递减对照异常：' + JSON.stringify({ d1cx, d2cx, d1wj, d2wj, dim: jo2.diminishing })); }
 }
 
 /* ---------- 17. 赵高威胁度 ≥50：5-2 拒绝被拖入死线（GDD 4.3 / 5-2-B） ---------- */
@@ -948,7 +964,7 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ 章 1 行动卡过滤异常：' + acts1.map(o => o.action.id).join('、')); }
 }
 
-/* ---------- 44. 关键卡倒计时：连出行动卡 roundsLeft 3→2→1→0，归零强制进入关键事件抉择（不自动结算）；第 3 次收益至下限 1 ---------- */
+/* ---------- 44. 关键卡倒计时：连出行动卡 roundsLeft 3→2→1→0，归零强制进入关键事件抉择（不自动结算）；连用收益无递减（卡牌 v2） ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start(); g.beginEvents();
@@ -961,10 +977,10 @@ function expect(name, actual, wantId, wantVariant) {
   }
   if (seen.join('→') === '3→2→1') { pass++; console.log('✔ 关键卡倒计时随行动卡递减：' + seen.join('→') + '→0'); }
   else { fail++; console.log('✘ 倒计时序列异常：' + seen.join('→')); }
-  // 第 3 次使用：才学 4/4=1（下限 1）、声望 2/4→下限 1、危机代价 +2 不减
+  // 第 3 次使用（卡牌 v2 无递减）：收益与首次完全相同（才学+3/声望+1），代价危机+2 不变
   const d3cx = r.changes.find(c => c.k === 'caixue'), d3sw = r.changes.find(c => c.k === 'shengwang'), d3wj = r.changes.find(c => c.k === 'weiji');
-  if (r.useCount === 3 && d3cx.delta === 1 && d3sw.delta === 1 && d3wj.delta === 2) { pass++; console.log('✔ 第 3 次收益收敛至下限 ±1（才学+1 声望+1），代价危机+2 不减'); }
-  else { fail++; console.log('✘ 递减下限异常：' + JSON.stringify(r.changes)); }
+  if (r.useCount === 3 && d3cx.delta === 3 && d3sw.delta === 1 && d3wj.delta === 2) { pass++; console.log('✔ 第 3 次收益与首次完全相同（无递减：才学+3 声望+1），代价危机+2 不变'); }
+  else { fail++; console.log('✘ 连用收益异常：' + JSON.stringify(r.changes)); }
   // 归零强制抉择：停在 0-1 事件页（phase 'event'），未自动 choose、未推进；成就「时不我待」解锁
   if (r.forcedKey === true && g.phase === 'event' && g.eventId === '0-1' && !r.route && !g.flags.guanshu) {
     pass++; console.log('✔ 倒计时归零强制进入 0-1 抉择页（forcedKey，未自动结算、未推进）');
@@ -1069,7 +1085,7 @@ function expect(name, actual, wantId, wantVariant) {
   g2.beginRounds();
   g2.offer = [{ type: 'key' }, { type: 'action', id: 'ACT-22' }];
   const r2 = g2.playCard(1);
-  const okActSucc = r2 && !r2.failed && r2.risk.roll === 31 && g2.attrs.caixue === 42; // 修书吕门 caixue+2
+  const okActSucc = r2 && !r2.failed && r2.risk.roll === 31 && g2.attrs.caixue === 41; // 修书吕门 caixue+1（卡牌 v2 缩窄）
   if (okActFail && okActSucc) { pass++; console.log('✔ 行动卡险招：入池带 risky（50%）；失败徒劳危机+3计次推进，成功 roll 31 正常结算'); }
   else { fail++; console.log('✘ 行动卡险招异常：' + JSON.stringify({ f: okActFail, s: okActSucc, roll: r2 && r2.risk && r2.risk.roll })); }
 }
@@ -1204,7 +1220,7 @@ function expect(name, actual, wantId, wantVariant) {
   } else { fail++; console.log('✘ 章末选项门槛异常：blocked=' + blocked + ' r2text=' + (r2 && r2.text || '').slice(0, 8)); }
 }
 
-/* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8（上限随 ATTRS max 缩放：max/100×8，现全维度 100 即 ≤±8）、zg ≤±5、带 chapters 且每章池 12 ---------- */
+/* ---------- 46. 行动卡数据卫生（卡牌 v2）：64 个行动 eff 单项 ≤±8（上限随 ATTRS max 缩放，现全维度 100 即 ≤±8）、zg ≤±5、带 chapters 且每章池 16 ---------- */
 {
   const bad = [];
   const amax = {}; D.ATTRS.forEach(a => { amax[a.k] = a.max || 100; });
@@ -1220,8 +1236,8 @@ function expect(name, actual, wantId, wantVariant) {
   });
   const poolSizes = [];
   for (let ci = 0; ci <= 6; ci++) poolSizes.push(D.ACTIONS.filter(a => a.chapters[0] <= ci && ci <= a.chapters[1]).length);
-  if (D.ACTIONS.length === 48 && bad.length === 0 && poolSizes.every(n => n === 12)) { pass++; console.log('✔ 48 个行动数据卫生：单项 ≤±8、zg ≤±5、每章池 12（' + poolSizes.join('/') + '）'); }
-  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + poolSizes.join('/'))); }
+  if (D.ACTIONS.length === 64 && bad.length === 0 && poolSizes.every(n => n === 16)) { pass++; console.log('✔ 64 个行动数据卫生（卡牌 v2）：单项 ≤±8、zg ≤±5、每章池 16（' + poolSizes.join('/') + '）'); }
+  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + poolSizes.join('/') + ' 总数 ' + D.ACTIONS.length)); }
 }
 
 /* ---------- 47. 成就埋点：义薄云天（2-3-C 收尸）/ 护书之人（4-5-B 官藏代焚）/ 死里逃生（3-3-A 狱中书） ---------- */
