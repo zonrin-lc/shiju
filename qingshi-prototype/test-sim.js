@@ -557,13 +557,13 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ 上书门槛减免未生效'); }
 }
 
-/* ---------- 24. N1 异变：声望≥50 触发「籍没其家」（v1.8 万位标尺：高财富封至 500） ---------- */
+/* ---------- 24. N1 异变：声望≥50 触发「籍没其家」 ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start();
-  g.attrs.shengwang = 55; g.attrs.caifu = 3000;
+  g.attrs.shengwang = 55; g.attrs.caifu = 30;
   g.enterChapter(3);
-  if (g.flags.jimo && g.attrs.caifu === 500 && g.introNotes.some(n => n.indexOf('籍没其家') >= 0)) { pass++; console.log('✔ 声望≥50 触发 N1 异变：逐客且籍没其家（财富 3000 封至 500）'); }
+  if (g.flags.jimo && g.attrs.caifu === 5 && g.introNotes.some(n => n.indexOf('籍没其家') >= 0)) { pass++; console.log('✔ 声望≥50 触发 N1 异变：逐客且籍没其家（财富 30 封至 5）'); }
   else { fail++; console.log('✘ jimo 异变未触发'); }
 }
 
@@ -588,7 +588,7 @@ function expect(name, actual, wantId, wantVariant) {
   let raised = false;
   const { g, trace } = play('normal', {
     // v1.8 重调路线：全事件脚本化（同 #1 史实线选项）。旧路线只脚本部分事件，未脚本事件的兜底行动卡
-    // 在万位标尺下发牌池漂移（caifu req 过滤变化），c4–c6 危机积累越 100 提前死（E8/zuzhu），到不了 6-4
+    // 轨迹随 caifu req 标尺调整漂移（发牌池过滤变化），c4–c6 危机积累可能越 100 提前死（E8/zuzhu），到不了 6-4
     '0-1': '驻足细想', '0-2': '辞去吏职', '0-4': '仓中鼠',
     '1-1': '潜心问学', '1-2': '西入秦', '1-3': '细察秦国民情',
     '2-1': '埋头著文', '2-2': '灭诸侯、成帝业', '2-3': '上书自辩', '2-4': '全力经略',
@@ -650,7 +650,7 @@ function expect(name, actual, wantId, wantVariant) {
 {
   const g = mkGame('normal', rngHigh);
   g.start();
-  g.attrs.weiji = 95; g.attrs.caifu = 5000; // v1.8 万位标尺：散尽家财 req caifu 3000，需达标才不锁
+  g.attrs.weiji = 95; g.attrs.caifu = 50; // 散尽家财 req caifu 30，需达标才不锁
   g.enterChapter(1);
   if (g.eventId === 'C-DEATH' && g.pendingEventId === '1-1' && g.currentRandom) { pass++; console.log('✔ 危机 95：章首替换为死亡判定事件 C-DEATH'); }
   else { fail++; console.log('✘ 死亡判定章首替换异常：' + g.eventId); }
@@ -1204,7 +1204,7 @@ function expect(name, actual, wantId, wantVariant) {
   } else { fail++; console.log('✘ 章末选项门槛异常：blocked=' + blocked + ' r2text=' + (r2 && r2.text || '').slice(0, 8)); }
 }
 
-/* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8（v1.8 按标尺：caifu ≤±800，即 8% of max）、zg ≤±5、带 chapters 且每章池 12 ---------- */
+/* ---------- 46. 行动卡数据卫生：48 个行动 eff 单项 ≤±8（上限随 ATTRS max 缩放：max/100×8，现全维度 100 即 ≤±8）、zg ≤±5、带 chapters 且每章池 12 ---------- */
 {
   const bad = [];
   const amax = {}; D.ATTRS.forEach(a => { amax[a.k] = a.max || 100; });
@@ -1212,7 +1212,7 @@ function expect(name, actual, wantId, wantVariant) {
     if (!Array.isArray(a.chapters) || a.chapters.length !== 2) bad.push(a.id + ' 缺 chapters');
     const eff = a.eff || {};
     Object.keys(eff.attrs || {}).forEach(k => {
-      const lim = Math.max(8, Math.round((amax[k] || 100) * 0.08)); // 财富 800，其余 8
+      const lim = Math.max(8, Math.round((amax[k] || 100) * 0.08));
       if (Math.abs(eff.attrs[k]) > lim) bad.push(a.id + ' ' + k + '=' + eff.attrs[k]);
     });
     if (eff.zg && Math.abs(eff.zg) > 5) bad.push(a.id + ' zg=' + eff.zg);
@@ -1220,7 +1220,7 @@ function expect(name, actual, wantId, wantVariant) {
   });
   const poolSizes = [];
   for (let ci = 0; ci <= 6; ci++) poolSizes.push(D.ACTIONS.filter(a => a.chapters[0] <= ci && ci <= a.chapters[1]).length);
-  if (D.ACTIONS.length === 48 && bad.length === 0 && poolSizes.every(n => n === 12)) { pass++; console.log('✔ 48 个行动数据卫生：单项 ≤±8（财富 ≤±800）、zg ≤±5、每章池 12（' + poolSizes.join('/') + '）'); }
+  if (D.ACTIONS.length === 48 && bad.length === 0 && poolSizes.every(n => n === 12)) { pass++; console.log('✔ 48 个行动数据卫生：单项 ≤±8、zg ≤±5、每章池 12（' + poolSizes.join('/') + '）'); }
   else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + poolSizes.join('/'))); }
 }
 
@@ -1367,19 +1367,19 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ 焚书污名章界异常：shengwang=' + g3.attrs.shengwang); }
 }
 
-/* ---------- 54. N1 籍没边界：capAttrs 只降不升——财富 300 的贫寒玩家不被反向补贴（v1.8 万位标尺） ---------- */
+/* ---------- 54. N1 籍没边界：capAttrs 只降不升——财富 3 的贫寒玩家不被反向补贴 ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start();
-  g.attrs.shengwang = 55; g.attrs.caifu = 300;
+  g.attrs.shengwang = 55; g.attrs.caifu = 3;
   g.enterChapter(3);
-  if (g.flags.jimo && g.attrs.caifu === 300) { pass++; console.log('✔ 籍没边界：财富 300 低于封存上限 500，jimo 触发但财富不增（不反向补贴）'); }
+  if (g.flags.jimo && g.attrs.caifu === 3) { pass++; console.log('✔ 籍没边界：财富 3 低于封存上限，jimo 触发但财富不增（不反向补贴）'); }
   else { fail++; console.log('✘ 籍没边界异常：jimo=' + !!g.flags.jimo + ' caifu=' + g.attrs.caifu); }
   const g2 = mkGame('normal', rngHigh);
   g2.randomOn = false; g2.start();
-  g2.attrs.shengwang = 55; g2.attrs.caifu = 3000;
+  g2.attrs.shengwang = 55; g2.attrs.caifu = 30;
   g2.enterChapter(3);
-  if (g2.flags.jimo && g2.attrs.caifu === 500) { pass++; console.log('✔ 籍没封存：财富 3000 高于上限，被封存至 500'); }
+  if (g2.flags.jimo && g2.attrs.caifu === 5) { pass++; console.log('✔ 籍没封存：财富 30 高于上限，被封存至 5'); }
   else { fail++; console.log('✘ 籍没封存异常：jimo=' + !!g2.flags.jimo + ' caifu=' + g2.attrs.caifu); }
 }
 
@@ -1392,25 +1392,25 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ catch-all 异常：' + JSON.stringify(r)); }
 }
 
-/* ---------- 56. 属性上限表（v1.8）：attrMax('caifu')===10000（万位标尺），其余十维 100 ---------- */
+/* ---------- 56. 属性上限表（v1.8）：attrMax 全 11 维均 100（引擎保留 per-attr max 机制，李斯不再声明 max） ---------- */
 {
   const g = mkGame('normal', rngHigh);
-  const others = ['tupo', 'wuli', 'caixue', 'moulue', 'biancai', 'shengwang', 'quanshi', 'zhengji', 'junxin', 'weiji'];
-  const bad = others.filter(k => g.attrMax(k) !== 100);
-  if (g.attrMax('caifu') === 10000 && bad.length === 0) { pass++; console.log('✔ attrMax：财富 10000（万位标尺），其余十维均 100'); }
-  else { fail++; console.log('✘ attrMax 异常：caifu=' + g.attrMax('caifu') + ' 非100项=' + bad.join('、')); }
+  const keys = ['tupo', 'wuli', 'caixue', 'moulue', 'biancai', 'caifu', 'shengwang', 'quanshi', 'zhengji', 'junxin', 'weiji'];
+  const bad = keys.filter(k => g.attrMax(k) !== 100);
+  if (bad.length === 0) { pass++; console.log('✔ attrMax：全 11 维均 100（per-attr max 机制保留，李斯不声明 max）'); }
+  else { fail++; console.log('✘ attrMax 异常：' + bad.map(k => k + '=' + g.attrMax(k)).join('、')); }
 }
 
-/* ---------- 57. 财富钳制（v1.8）：applyEff 大额增益封顶 10000、大额扣减钳 0（_clampA 走 per-attr max） ---------- */
+/* ---------- 57. 财富钳制：applyEff 大额增益封顶 100、大额扣减钳 0（_clampA 走 per-attr max，0–100 标尺） ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.start();
-  g.attrs.caifu = 8000;
-  g.applyEff({ attrs: { caifu: 5000 } });  // 8000+5000 → 封顶 10000
+  g.attrs.caifu = 80;
+  g.applyEff({ attrs: { caifu: 50 } });  // 80+50 → 封顶 100
   const top = g.attrs.caifu;
-  g.applyEff({ attrs: { caifu: -20000 } }); // → 钳 0
+  g.applyEff({ attrs: { caifu: -200 } }); // → 钳 0
   const bottom = g.attrs.caifu;
-  if (top === 10000 && bottom === 0) { pass++; console.log('✔ 财富钳制：8000+5000 封顶 10000，再 -20000 钳 0'); }
+  if (top === 100 && bottom === 0) { pass++; console.log('✔ 财富钳制：80+50 封顶 100，再 -200 钳 0'); }
   else { fail++; console.log('✘ 财富钳制异常：上界 ' + top + ' / 下界 ' + bottom); }
 }
 
@@ -1472,7 +1472,7 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ 大病流程异常：' + JSON.stringify({ onset, drain, noHeal, ill: g.ill })); }
 }
 
-/* ---------- 61. 治病卡（v1.8）：染病后 beginRounds 加发「求医问药」（__cure__，不占行动池）；选它清病、财富-300、体魄+5、倒计时照常推进 ---------- */
+/* ---------- 61. 治病卡（v1.8）：染病后 beginRounds 加发「求医问药」（__cure__，不占行动池）；选它清病、财富-3、体魄+5、倒计时照常推进 ---------- */
 {
   const g = mkGame('normal', rngHigh, { ill: illSeq([0.0, 0.0]) });
   g.randomOn = false; g.start(); g.beginEvents();
@@ -1485,9 +1485,9 @@ function expect(name, actual, wantId, wantVariant) {
   const c0 = g.attrs.caifu, t0 = g.attrs.tupo, rl0 = g.keyRoundsLeft;
   const r = g.playCard(ci);
   const cured = r && r.id === '__cure__' && g.ill === null
-    && g.attrs.caifu === c0 - 300 && g.attrs.tupo === t0 + 5
+    && g.attrs.caifu === c0 - 3 && g.attrs.tupo === t0 + 5
     && g.keyRoundsLeft === rl0 - 1 && g.phase === 'round'
-    && r.changes.some(c => c.k === 'caifu' && c.delta === -300) && r.changes.some(c => c.k === 'tupo' && c.delta === 5);
+    && r.changes.some(c => c.k === 'caifu' && c.delta === -3) && r.changes.some(c => c.k === 'tupo' && c.delta === 5);
   const gone = g.getOffer().every(o => !(o.action && o.action.id === '__cure__')); // 愈后重发牌不再带治病卡
   if (offered && cured && gone) { pass++; console.log('✔ 治病卡：染病后 getOffer 可见「求医问药」（3 池卡之外）；财富 ' + c0 + '→' + g.attrs.caifu + '、体魄+5、清病、倒计时 ' + rl0 + '→' + g.keyRoundsLeft + '，愈后停发'); }
   else { fail++; console.log('✘ 治病卡异常：' + JSON.stringify({ offered, cured, gone, ill: g.ill })); }
@@ -1513,18 +1513,18 @@ function expect(name, actual, wantId, wantVariant) {
   else { fail++; console.log('✘ 病亡异常：' + JSON.stringify({ dead, eNormal, alive, tupo: gs.attrs.tupo })); }
 }
 
-/* ---------- 63. caifu 恒为硬门槛（v1.8）：C-DEATH「散尽家财」req 财富 3000——2999 锁定（非险招），3000 可选 ---------- */
+/* ---------- 63. caifu 恒为硬门槛（v1.8）：C-DEATH「散尽家财」req 财富 30——29 锁定（非险招），30 可选 ---------- */
 {
   const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start();
-  g.attrs.weiji = 95; g.attrs.caifu = 2999;
+  g.attrs.weiji = 95; g.attrs.caifu = 29;
   g.enterChapter(1); g.beginEvents();
   g.playCard(0); // 关键卡 → C-DEATH
   const find = () => g.getOptions().find(o => o.opt.t.indexOf('散尽家财') >= 0);
-  const low = find();           // 2999 < 3000：硬锁，不转险招
-  g.attrs.caifu = 3000;
-  const high = find();          // 3000 达标：可选
-  if (low && low.locked === true && !low.risky && high && !high.locked && !high.risky) { pass++; console.log('✔ caifu 硬门槛：财富 2999「散尽家财」锁定（' + (low.reason || '无原因') + '，非险招），3000 解锁'); }
+  const low = find();           // 29 < 30：硬锁，不转险招
+  g.attrs.caifu = 30;
+  const high = find();          // 30 达标：可选
+  if (low && low.locked === true && !low.risky && high && !high.locked && !high.risky) { pass++; console.log('✔ caifu 硬门槛：财富 29「散尽家财」锁定（' + (low.reason || '无原因') + '，非险招），30 解锁'); }
   else { fail++; console.log('✘ caifu 硬门槛异常：' + JSON.stringify({ low: low && [low.locked, !!low.risky], high: high && [high.locked, !!high.risky] })); }
 }
 
