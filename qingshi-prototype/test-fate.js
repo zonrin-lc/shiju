@@ -35,19 +35,23 @@ function ok(cond, label, detail){ if (cond){ pass++; console.log('✔ ' + label)
   ok(!missing, '词条完整性：50 局全部 ⟦词条⟧ 在合并词条库有定义', missing);
 }
 
-/* 3. 初始属性扰动带：十一维 ±10、危机 ±5、clamp 0–100 */
+/* 3. 初始属性扰动带：十一维按各本 ATTRS max 计算（max/10、下限 10——李斯财富 ±1000/顶 10000，其余 ±10）、危机 ±5、clamp 0–max */
 {
   let bad = '';
   outer:
   for (let i = 0; i < 100; i++){
     const r = F.makeFate(DATA, F.mulberry32(9000 + i));
-    const base = DATA[r.report.protag].INIT;
+    const src = DATA[r.report.protag];
+    const amax = {}; (src.ATTRS || []).forEach(a => { amax[a.k] = a.max || 100; });
+    const base = src.INIT;
     for (const k of F.ATTR_KEYS){
-      const span = k === 'weiji' ? 5 : 10, v = r.data.INIT[k], b = base[k];
-      if (v < Math.max(0, b - span) || v > Math.min(100, b + span)) { bad = `seed#${i} ${k}=${v} 基=${b}`; break outer; }
+      const mx = amax[k] || 100;
+      const span = k === 'weiji' ? 5 : Math.max(10, Math.round(mx / 10));
+      const v = r.data.INIT[k], b = base[k];
+      if (v < Math.max(0, b - span) || v > Math.min(mx, b + span)) { bad = `seed#${i} ${r.report.protag} ${k}=${v} 基=${b} 带=±${span} 顶=${mx}`; break outer; }
     }
   }
-  ok(!bad, '扰动带：100 局十一维 ±10、危机 ±5、0–100 收敛', bad);
+  ok(!bad, '扰动带：100 局按各本 ATTRS max 计算（财富 ±1000/10000，其余 ±10）、危机 ±5、0–max 收敛', bad);
 }
 
 /* 4. 冲突词条以主角本为准（取主角本同样拥有该词条的命局验证） */

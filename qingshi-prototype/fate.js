@@ -2,7 +2,7 @@
  * 输入：五剧本数据映射 + 可复现 rng；输出：一份可直接喂给引擎的"第六剧本"数据对象。
  * 随机化范围（主线/危机/修正保留主角本，涌现的是"势"）：
  *   ① 主角：五选一（均匀）
- *   ② 初始属性：以主角 INIT 为基准，六维 ±10、危机 ±5（clamp 0–100）
+ *   ② 初始属性：以主角 INIT 为基准，十一维 ±10、危机 ±5（per-attr 上限 clamp，v1.8：如财富 ±1000 / 10000）
  *   ③ 际遇池：五本 RANDOM_EVENTS 全量 60 个抽 12 不重复（id 重编 F-1..F-12）
  *   ④ 词条库：五本 GLOSSARY 合并（key 冲突以主角本为准）
  *   ⑤ 命局摘要：写入 chapters[0].enter.note（章首注）
@@ -23,7 +23,7 @@
     };
   }
   function ri(rng, lo, hi) { return lo + Math.floor(rng() * (hi - lo + 1)); }
-  function clamp(v) { return Math.max(0, Math.min(100, v)); }
+  function clamp(v, mx) { return Math.max(0, Math.min(mx != null ? mx : 100, v)); }
 
   /* 主入口：dataMap = {key: data, ...}（values 为剧本数据对象）；rng 为 () => [0,1)。
    * 返回 { data, report } —— data 为命局剧本数据；report 为命局摘要（人物/扰动/池来源）。 */
@@ -36,14 +36,16 @@
     // 深拷贝主角本（剧本数据为纯 JSON 结构）
     var d = JSON.parse(JSON.stringify(src));
 
-    // ① 初始属性扰动
+    // ① 初始属性扰动（per-attr 上限，v1.8：ATTRS[].max 声明——如财富 10000，扰动带随标尺）
+    var amax = {};
+    (d.ATTRS || []).forEach(function (a) { amax[a.k] = a.max || 100; });
     var jitter = {};
     ATTR_KEYS.forEach(function (k) {
-      var base = d.INIT[k];
-      var span = k === 'weiji' ? 5 : 10;
+      var base = d.INIT[k], mx = amax[k] || 100;
+      var span = k === 'weiji' ? 5 : Math.max(10, Math.round(mx / 10));
       var delta = ri(rng, -span, span);
       jitter[k] = delta;
-      d.INIT[k] = clamp(base + delta);
+      d.INIT[k] = clamp(base + delta, mx);
     });
 
     // ② 际遇池：全量打散抽 12（id 重编，防跨剧本重名冲突）

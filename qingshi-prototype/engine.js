@@ -99,7 +99,18 @@
     this._chapterStartId = null; // 本章实际起始剧本事件（startAlt 解析后；进度分母口径用）
     this._burned = {};           // 险招失败烧毁的选项（eventId:idx → true，本事件内不可再试，GDD 附录 J）
     this.xushi = false;          // 蓄势状态（v1.6）：下一次事件抉择险招 +10，抉择后清空
+    // 属性上限表（v1.8）：ATTRS[].max 声明（如财富 10000），未声明按 100
+    var selfA = this; this._amax = {};
+    (this.d.ATTRS || []).forEach(function (a) { selfA._amax[a.k] = a.max || 100; });
+    // 年龄（v1.8，剧本 AGE 配置）：隐形背景值，章首按历史纪年定龄，体魄随年龄段衰减
+    this.age = (this.d.AGE && this.d.AGE.init != null) ? this.d.AGE.init : null;
+    // 疾病（v1.8，剧本 ILLNESS 配置开启）：null | { type:'minor'|'major', left?:n }
+    this.ill = null;
   };
+
+  /* 属性上限（per-attr max，v1.8；财富万位标尺用）与属性钳制 */
+  Game.prototype.attrMax = function (k) { return (this._amax && this._amax[k]) || 100; };
+  Game.prototype._clampA = function (k, v) { return Math.max(0, Math.min(this.attrMax(k), Math.round(v))); };
 
   Game.prototype.start = function () { this.enterChapter(0); };
 
@@ -168,12 +179,13 @@
     if (rate >= 20) return 30; return 20;
   };
 
-  /* 分类 req：hardOk/hardReason（硬键判定）+ unmet（未达标软键明细）+ rate（综合成功率，无软缺口为 null） */
+  /* 分类 req：hardOk/hardReason（硬键判定）+ unmet（未达标软键明细）+ rate（综合成功率，无软缺口为 null）
+   * caifu 恒为硬门槛（支付能力检查）：万位标尺（v1.8）下软门槛差值档不适用，且"钱不够"本就该锁而不是赌 */
   Game.prototype.checkRisk = function (req, actionHardCaifu) {
     var self = this, names = this.d.ATTR_NAMES;
     var hard = {}, unmet = [];
     Object.keys(req || {}).forEach(function (k) {
-      if (names[k] && !(actionHardCaifu && k === 'caifu')) {
+      if (names[k] && k !== 'caifu') {
         var have = self.attrs[k], need = req[k];
         if (have < need) unmet.push({ k: k, name: names[k], need: need, have: have, gap: need - have });
       } else hard[k] = req[k];
@@ -227,22 +239,33 @@
         }
       });
     }
+    // 年龄定龄与衰老（v1.8，剧本 AGE 配置）：章首按历史纪年定龄；体魄随年龄段自然衰减（不进结算条目，走章首注）
+    if (ch.age != null && this.d.AGE) {
+      this.age = ch.age;
+      var ageBands = this.d.AGE.bands || [[40, 0], [55, -2], [65, -4], [76, -6], [200, -8]];
+      var dAge = 0;
+      for (var abi = 0; abi < ageBands.length; abi++) { if (this.age < ageBands[abi][0]) { dAge = ageBands[abi][1]; break; } }
+      if (dAge) {
+        this.attrs.tupo = this._clampA('tupo', this.attrs.tupo + dAge);
+        this.introNotes.push('【春秋渐高】年已' + this.age + '，筋骨大不如前——体魄' + dAge + '。');
+      }
+    }
     // GDD 4.1 章首持续结算：高值风险以"每章"粒度生效（危机正增量乘难度系数 diff.wj，GDD 4.4）
     // 失宠规则为朝堂语境（需"有君可失"）——剧本可经 PERSIST.junxinFrom 设定生效起始章、
     // PERSIST.junxinShichong=false 整体关闭（项羽：君心=天下人望，惩罚由诸侯离心 zg 承担）
     var wj = this.diff.wj, dWj;
     var jxFrom = (this.d.PERSIST && this.d.PERSIST.junxinFrom != null) ? this.d.PERSIST.junxinFrom : 0;
     var shichongOn = !(this.d.PERSIST && this.d.PERSIST.junxinShichong === false);
-    if (this.attrs.quanshi >= 80) { dWj = Math.round(5 * wj); this.attrs.weiji = clamp(this.attrs.weiji + dWj); this.introNotes.push('【树大招风】权势过盛，君主猜忌日深——危机+' + dWj + '。'); }
-    if (this.attrs.junxin <= 15 && shichongOn && this.chapterIdx >= jxFrom) { dWj = Math.round(10 * wj); this.attrs.weiji = clamp(this.attrs.weiji + dWj); this.introNotes.push('【失宠于上】君心已冷，构陷者众——危机+' + dWj + '。'); }
-    if (this.attrs.caifu <= 0) { this.attrs.shengwang = clamp(this.attrs.shengwang - 5); this.introNotes.push('【门客散去】无钱养士，门前冷落——声望-5。'); }
-    if (this.attrs.shengwang >= 80 && this.attrs.junxin < 40 && !this.flags._gonggao) { this.flags._gonggao = true; dWj = Math.round(10 * wj); this.attrs.weiji = clamp(this.attrs.weiji + dWj); this.introNotes.push('【功高震主】你的名望已越过人臣的界限——危机+' + dWj + '。'); }
-    if (this.attrs.caifu >= 90 && !this.flags._jiyu) { this.flags._jiyu = true; dWj = Math.round(8 * wj); this.attrs.weiji = clamp(this.attrs.weiji + dWj); this.introNotes.push('【宗室觊觎】你的家产引来了宗室的目光——危机+' + dWj + '。'); }
+    if (this.attrs.quanshi >= 80) { dWj = Math.round(5 * wj); this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dWj); this.introNotes.push('【树大招风】权势过盛，君主猜忌日深——危机+' + dWj + '。'); }
+    if (this.attrs.junxin <= 15 && shichongOn && this.chapterIdx >= jxFrom) { dWj = Math.round(10 * wj); this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dWj); this.introNotes.push('【失宠于上】君心已冷，构陷者众——危机+' + dWj + '。'); }
+    if (this.attrs.caifu <= 0) { this.attrs.shengwang = this._clampA('shengwang', this.attrs.shengwang - 5); this.introNotes.push('【门客散去】无钱养士，门前冷落——声望-5。'); }
+    if (this.attrs.shengwang >= 80 && this.attrs.junxin < 40 && !this.flags._gonggao) { this.flags._gonggao = true; dWj = Math.round(10 * wj); this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dWj); this.introNotes.push('【功高震主】你的名望已越过人臣的界限——危机+' + dWj + '。'); }
+    if (this.attrs.caifu >= this.attrMax('caifu') * 0.9 && !this.flags._jiyu) { this.flags._jiyu = true; dWj = Math.round(8 * wj); this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dWj); this.introNotes.push('【宗室觊觎】你的家产引来了宗室的目光——危机+' + dWj + '。'); }
     // GDD 4-5-A 设计备注：污名·焚书（wu_fenshu）——士人集团永久敌意。第五/六章章首兑现：
     // 首次入章一次性警示，此后每章声望-3 持续侵蚀（声望非危机，不乘难度系数，GDD 4.4 口径）
     if (this.flags.wu_fenshu && idx >= 5) {
       if (!this.flags._wfsWarn) { this.flags._wfsWarn = true; this.introNotes.push('【污名·焚书】士林至今以焚书之议罪你——辩白无用，这份敌意会伴你走到局终。'); }
-      this.attrs.shengwang = clamp(this.attrs.shengwang - 3);
+      this.attrs.shengwang = this._clampA('shengwang', this.attrs.shengwang - 3);
       this.introNotes.push('【士林侧目】焚书之议，士林视你为仇——声望-3。');
     }
     if (ch.achOnEnter) this.unlockAch(ch.achOnEnter);
@@ -315,7 +338,9 @@
       // 回合制状态（章首快照时点：倒计时满、行动未用、进度清零；offer 不入快照，恢复后由 beginRounds 重发）
       keyRoundsLeft: this.keyRoundsLeft,
       actionUses: Object.assign({}, this.actionUses),
-      passed: Object.assign({}, this.passedEvents)
+      passed: Object.assign({}, this.passedEvents),
+      age: this.age,   // 年龄/疾病属时间线状态（v1.8）：随快照存取，回溯即回到章首病况
+      ill: this.ill ? Object.assign({}, this.ill) : null
     };
   };
 
@@ -353,6 +378,8 @@
     }
     this.offer = [{ type: 'key' }];
     picks.forEach(function (a) { self.offer.push({ type: 'action', id: a.id }); });
+    // 治病卡（v1.8，剧本 ILLNESS）：染病时额外发一张「求医问药」，不占行动池、不入收益递减
+    if (this.ill && this.d.ILLNESS) this.offer.push({ type: 'action', id: '__cure__' });
     this.phase = 'round';
     return { type: 'round' };
   };
@@ -373,7 +400,13 @@
         };
       }
       var a = null;
-      (self.d.ACTIONS || []).forEach(function (x) { if (x.id === e.id) a = x; });
+      if (e.id === '__cure__') {
+        // 治病卡（v1.8）：数据不在 ACTIONS，由 ILLNESS 配置现组（UI 按普通行动卡渲染）
+        if (self.d.ILLNESS) a = { id: '__cure__', name: '求医问药',
+          desc: (self.ill && self.ill.type === 'major' ? '沉疴非药石不起——' : '小病亦不可拖——') + '延医诊治（财富-' + self.d.ILLNESS.cost + '）' };
+      } else {
+        (self.d.ACTIONS || []).forEach(function (x) { if (x.id === e.id) a = x; });
+      }
       var c = { ok: true, reason: null }, risky = null;
       if (a && a.req) {
         var cr = self.checkRisk(a.req, true);
@@ -397,6 +430,30 @@
       return { kind: 'key' };
     }
     // ---- 行动卡 ----
+    // 治病卡（v1.8）：清病 + 药资，视作本轮行动（推进倒计时，不收益递减）
+    if (entry.id === '__cure__') {
+      if (!this.ill || !this.d.ILLNESS) return null;
+      var ILL = this.d.ILLNESS, wasMajor = this.ill.type === 'major';
+      this.ill = null;
+      var paid = Math.min(this.attrs.caifu, ILL.cost), owed = this.attrs.caifu < ILL.cost;
+      this.attrs.caifu = this._clampA('caifu', this.attrs.caifu - ILL.cost);
+      var heal = ILL.heal || 5;
+      this.attrs.tupo = this._clampA('tupo', this.attrs.tupo + heal);
+      var cureChanges = [
+        { k: 'caifu', label: '财富', delta: -paid, note: owed ? '举债求医，债台高筑' : '延医之资' },
+        { k: 'tupo', label: '体魄', delta: heal, note: '药石有功' }
+      ];
+      var rc = {
+        kind: 'action', id: '__cure__',
+        text: wasMajor ? '医者换了三次方，前前后后一个月，你终于能扶着墙坐起来了。这场大病，把日子熬短了一截。'
+                       : '一剂汤药下去，病气散了。小病早治，原是至理。',
+        changes: cureChanges, devDelta: 0, useCount: 1,
+        achNew: null, bandUp: false, bandName: null, forcedEnding: false, risk: null, failed: false
+      };
+      var feC = this.checkDeath();
+      if (feC) { this._next = feC; this.phase = 'settle'; rc.forcedEnding = true; return rc; }
+      return this._advanceRound(rc);
+    }
     var a = null;
     (this.d.ACTIONS || []).forEach(function (x) { if (x.id === entry.id) a = x; });
     if (!a) return null;
@@ -412,6 +469,8 @@
     this.actionUses[a.id] = useN;
     var eff = failed ? { attrs: { weiji: 3 } } : this._scaleActionEff(a.eff || {}, useN);
     var changes = this.applyEff(eff);
+    // 疾病推进（v1.8，剧本 ILLNESS）：出牌即耗时日——已病者转归，未病者掷发病（ill 流）
+    if (this.d.ILLNESS) this._tickIllness(changes);
     var r = {
       kind: 'action', id: a.id, text: failed ? '徒劳一场。' : a.res, changes: changes,
       devDelta: eff.dev || 0, useCount: useN,
@@ -471,6 +530,55 @@
     return this._advanceRound(r);
   };
 
+  /* 疾病推进（v1.8，剧本 ILLNESS 配置开启；GDD 附录 T）：
+   * 出牌即耗时日——
+   * 已病：小病（minor）每次行动 left-1，归零自愈；大病（major）每次行动体魄 -drainTupo、
+   *       危机 +drainWeiji（×难度系数），且病催人老（年龄额外 +1，加速衰老循环），唯「求医问药」可愈。
+   * 未病：按体魄与年龄掷发病（ill 流，可注入测试）——体魄越低、年纪越大越易病；
+   *       发病率 base + max(0,45-体魄)×0.004 + max(0,年龄-55)×0.004（封顶 0.35）；
+   *       大病概率 0.2 + max(0,年龄-60)×0.01 + max(0,30-体魄)×0.01。
+   * 病亡：体魄归零即死（见 checkDeath，非致命难度钳到 1）。 */
+  Game.prototype._tickIllness = function (changes) {
+    var ILL = this.d.ILLNESS; if (!ILL) return;
+    var wj = this.diff.wj, dW;
+    if (this.ill) {
+      if (this.ill.type === 'minor') {
+        this.ill.left = (this.ill.left != null ? this.ill.left : 2) - 1;
+        if (this.ill.left <= 0) {
+          this.ill = null;
+          changes.push({ k: 'tupo', label: '体魄', delta: 0, note: '病体自愈——小病靠养，总算过去了' });
+        }
+      } else {
+        this.attrs.tupo = this._clampA('tupo', this.attrs.tupo - (ILL.drainTupo || 2));
+        dW = Math.round((ILL.drainWeiji || 2) * wj);
+        this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dW);
+        if (this.age != null) this.age += 1;
+        changes.push({ k: 'tupo', label: '体魄', delta: -(ILL.drainTupo || 2), note: '沉疴缠身，病势日重，病一年老三年——须用「求医问药」' });
+        changes.push({ k: 'weiji', label: '危机', delta: dW, note: '病中无人主事，谗言易入' });
+      }
+      return;
+    }
+    var tupo = this.attrs.tupo, age = this.age != null ? this.age : 30;
+    var p = (ILL.base != null ? ILL.base : 0.03) + Math.max(0, 45 - tupo) * 0.004 + Math.max(0, age - 55) * 0.004;
+    if (this._stream('ill')() >= Math.min(0.35, p)) return;
+    var majorP = 0.2 + Math.max(0, age - 60) * 0.01 + Math.max(0, 30 - tupo) * 0.01;
+    if (this._stream('ill')() < majorP) {
+      this.ill = { type: 'major' };
+      this.attrs.tupo = this._clampA('tupo', tupo - (ILL.onsetTupo || 5));
+      dW = Math.round((ILL.onsetWeiji || 3) * wj);
+      this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dW);
+      changes.push({ k: 'tupo', label: '体魄', delta: -(ILL.onsetTupo || 5), note: '沉疴骤至，一病不起——非「求医问药」不能愈' });
+      changes.push({ k: 'weiji', label: '危机', delta: dW, note: '病榻之侧，人心浮动' });
+    } else {
+      this.ill = { type: 'minor', left: 2 };
+      this.attrs.tupo = this._clampA('tupo', tupo - 2);
+      dW = Math.round(1 * wj);
+      this.attrs.weiji = this._clampA('weiji', this.attrs.weiji + dW);
+      changes.push({ k: 'tupo', label: '体魄', delta: -2, note: '偶感风寒——静养两轮可自愈，亦可即服「求医问药」' });
+      if (dW) changes.push({ k: 'weiji', label: '危机', delta: dW, note: '病中耳目闭塞' });
+    }
+  };
+
   /* 收益递减：同章第 n 次使用同一行动（n 从 1 计），eff.attrs 中的"收益项"逐次减半、
    * 向 0 方向收敛且下限 ±1；代价项（危机正值、其余属性负值）不变。
    * 收益项 = 非危机属性的正值、危机的负值。递减只作用 eff.attrs，condAttrs/zg/dev/hist 不动。 */
@@ -501,7 +609,7 @@
     ev.enterEffects.forEach(function (ef) {
       if (ef.if && !self.check(ef.if).ok) return;
       if (ef.setFlags) ef.setFlags.forEach(function (f) { self.flags[f] = true; });
-      if (ef.attrs) Object.keys(ef.attrs).forEach(function (k) { self.attrs[k] = clamp(self.attrs[k] + ef.attrs[k]); });
+      if (ef.attrs) Object.keys(ef.attrs).forEach(function (k) { self.attrs[k] = self._clampA(k, self.attrs[k] + ef.attrs[k]); });
       if (ef.zg) self.zg = clamp(self.zg + ef.zg);
       if (ef.zgSet != null) self.zg = clamp(ef.zgSet);
     });
@@ -600,6 +708,14 @@
 
   /* ---------- 公共死亡判定：致死返回结局路由（proceed 可直接收束），否则返回 null ---------- */
   Game.prototype.checkDeath = function () {
+    // 病亡（v1.8，剧本 ILLNESS）：体魄归零即死（ILLNESS.death 指定结局/变体）；非致命难度钳到 1（不致死，GDD 4.4 口径）
+    if (this.d.ILLNESS && this.attrs.tupo <= 0) {
+      if (this.diff.lethal) {
+        var dd = this.d.ILLNESS.death || { ending: 'E8' };
+        return { type: 'ending', ending: dd.ending, variant: dd.variant || null };
+      }
+      this.attrs.tupo = 1;
+    }
     if (this.attrs.weiji < 100) return null;
     if (this.diff.lethal) return { type: 'ending', ending: 'E8', variant: this.zg >= 70 ? 'zuzhu' : 'cike' };
     this.attrs.weiji = 95;
@@ -614,7 +730,7 @@
       Object.keys(eff.attrs).forEach(function (k) {
         var v = eff.attrs[k];
         if (k === 'weiji' && v > 0) v = Math.round(v * self.diff.wj);
-        self.attrs[k] = clamp(self.attrs[k] + v);
+        self.attrs[k] = self._clampA(k, self.attrs[k] + v);
         var chg = { k: k, label: names[k], delta: v };
         // eff.notes = { 属性键: 注记 }：给普通 attrs 结算条目挂注记（渲染同 condAttrs 的 note；
         // 用于 Flag 兑现类设计备注的结算体现，如 4-6-C 蒙恬生隙、5-1-D 北联蒙恬）
@@ -625,7 +741,7 @@
     if (eff.setAttrs) {
       Object.keys(eff.setAttrs).forEach(function (k) {
         var old = self.attrs[k];
-        self.attrs[k] = clamp(eff.setAttrs[k]);
+        self.attrs[k] = self._clampA(k, eff.setAttrs[k]);
         var d = self.attrs[k] - old;
         if (d !== 0) changes.push({ k: k, label: names[k], delta: d });
       });
@@ -638,7 +754,7 @@
         Object.keys(ca.attrs || {}).forEach(function (k) {
           var v = ca.attrs[k];
           if (k === 'weiji' && v > 0) v = Math.round(v * self.diff.wj);
-          self.attrs[k] = clamp(self.attrs[k] + v);
+          self.attrs[k] = self._clampA(k, self.attrs[k] + v);
           changes.push({ k: k, label: names[k], delta: v, note: ca.note });
         });
       });
@@ -870,6 +986,8 @@
     // 时间线重写：蓄势与险招烧毁属上一条时间线的决策痕迹，不随回溯穿越（v1.6.1 P0 修复）
     this.xushi = false;
     this._burned = {};
+    this.age = s.age != null ? s.age : this.age;             // 年龄/疾病随快照恢复（v1.8）
+    this.ill = s.ill ? Object.assign({}, s.ill) : null;
     this.offer = null;
     this.backtracksThisChapter++;
     this.coef = Math.round(this.coef * 0.98 * 100) / 100;
@@ -928,6 +1046,8 @@
     if (bt == null) bt = 0;
     if (typeof bt !== 'number' || !isFinite(bt) || Math.floor(bt) !== bt || bt < 0) return false;
     if (this.diff.backtrack > 0 && bt > this.diff.backtrack) return false;
+    if (s.age != null && (typeof s.age !== 'number' || !isFinite(s.age) || s.age < 0)) return false;   // 年龄（v1.8）
+    if (s.ill != null && (typeof s.ill !== 'object' || (s.ill.type !== 'minor' && s.ill.type !== 'major'))) return false;   // 疾病（v1.8）
     // 逐项还原章首状态（回溯次数随档恢复；回溯系数 coef 按 GDD 既定口径跨会话重置为 1，不恢复）
     this.chapterIdx = obj.chapterIdx;
     this.attrs = Object.assign({}, s.attrs);
@@ -951,6 +1071,8 @@
     this.keyRoundsLeft = s.keyRoundsLeft != null ? s.keyRoundsLeft : KEY_CARD_ROUNDS;
     this.actionUses = Object.assign({}, s.actionUses || {});
     this.passedEvents = Object.assign({}, s.passed || {});
+    this.age = s.age != null ? s.age : ((this.d.AGE && this.d.AGE.init != null) ? this.d.AGE.init : null);
+    this.ill = s.ill ? Object.assign({}, s.ill) : null;
     this.offer = null;
     // 章内进度分母口径：快照未存起点 id，按存档语义还原（有插入事件时 pendingEventId 即剧本起点）
     this._chapterStartId = s.pendingEventId || s.eventId || null;

@@ -73,7 +73,7 @@
         else if (a.k === 'caifu') list.appendChild(el('div','attrGroup','身 外 ｜ 经营'));
         var row = el('div','attrRow');
         var valText = game.diff.hideAttrs ? game.attrWord(a.k) : (game.attrs[a.k] + ' · ' + game.attrWord(a.k));
-        var pct = game.attrs[a.k];
+        var pct = Math.round(game.attrs[a.k] / game.attrMax(a.k) * 100);   // per-attr 上限（v1.8：财富万位标尺）
         if (game.diff.hideAttrs){
           // 硬核（GDD 4.4）：条形不按真实百分比，按状态词命中档位四档均分渲染
           var tier = a.words.length - 1;
@@ -85,6 +85,8 @@
         list.appendChild(row);
       });
       meta.innerHTML = '偏离度 '+game.dev+'（'+game.d.DEV_BANDS[game.devBand()].name+'）<br>难度 '+game.diff.n+' ｜ 功业标记：'+(game.merits.join('、')||'无');
+      // 年龄与病况（v1.8，剧本 AGE/ILLNESS 配置；GDD 附录 T）
+      if (game.age != null) meta.innerHTML += '<br>年 '+game.age+' 岁'+(game.ill ? ' ｜ '+(game.ill.type==='major'?'沉疴缠身（大病，须「求医问药」）':'偶感风寒（小病，静养可愈）') : ' ｜ 身体无恙');
       // 主敌威胁/戒心（隐藏值，剧本 HIDDEN 配置；硬核不显示）
       if (game.d.HIDDEN && game.diffKey !== 'hardcore' && game.chapterIdx >= (game.d.HIDDEN.showFrom != null ? game.d.HIDDEN.showFrom : 3)) meta.innerHTML += '<br>'+game.d.HIDDEN.name+'：'+game.zgWord();
       clear(al);

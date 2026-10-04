@@ -175,6 +175,10 @@ const EFF_SCORE = {
 };
 function pickCard(stratName, g, rng) {
   const offer = g.getOffer();
+  // 大病求医（v1.8 疾病系统）：大病不会自愈且持续消磨体魄至死——所有策略视同理性玩家，优先打出「求医问药」
+  if (g.ill && g.ill.type === 'major') {
+    for (let i = 1; i < offer.length; i++) if (offer[i].action && offer[i].action.id === '__cure__') return i;
+  }
   if (stratName === 'hist') return 0; // 关键卡在则点关键卡（事件内照 hist 逻辑）
   if (stratName === 'xushi' && !g.xushi) return -1; // 蓄势策略：每个关键事件先蓄势一次（playOne 特判）
   // 已蓄势则按"厚积"打分出行动卡（v1.6.8 修复）：
