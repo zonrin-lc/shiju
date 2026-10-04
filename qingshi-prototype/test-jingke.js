@@ -8,9 +8,18 @@ const E = require('./engine.js');
 const rngHigh = () => 0.99;
 const rngLow = () => 0.01;
 
+/* v1.9 疾病系统（荆轲本 ILLNESS 开启）：出牌即掷发病（ill 流）。
+ * 全套件统一经 mkGame 构造 Game，默认注入 ill 流恒 0.99（≥发病率上限 0.35，永不发病），
+ * 保证既有路线断言的确定性轨迹不受新增随机源干扰；疾病专项用例（#15）经 streams.ill 自注序列。 */
+const ILL_NEVER = () => 0.99;
+function illSeq(vals) { let i = 0; return () => vals[Math.min(i++, vals.length - 1)]; }
+function mkGame(diffKey, rng, streams) {
+  return new E.Game(D, diffKey, rng, Object.assign({ ill: ILL_NEVER }, streams));
+}
+
 function play(diffKey, script0, rng, endScript, hook) {
   const script = Object.assign({}, script0);   // 浅拷贝：takeScript 会消费队列，不污染调用方的字面量
-  const g = new E.Game(D, diffKey, rng || rngHigh);
+  const g = mkGame(diffKey, rng || rngHigh);
   g.randomOn = false;
   g.start();
   let guard = 0;
@@ -58,7 +67,7 @@ function play(diffKey, script0, rng, endScript, hook) {
 }
 
 function driveTo(stopId, picks) {
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   g.randomOn = false;
   g.start();
   let guard = 0;
@@ -130,7 +139,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '4-1': '和歌而去', '4-2': '细察秦廷关节',
     '5-1': '千金买通', '5-2': '如常进殿', '5-3': '笑而谢曰', '5-4': '揕其胸',
     '5-5': '倚柱而笑'
-  });
+  }, rngHigh, null, g => { if (g.eventId === '5-3') g.attrs.biancai = Math.max(g.attrs.biancai, 50); }); // 5-3 笑谢路由 biancai:40（校准后）——注入 50：过笑谢（≥40）且 50+3=53<55 不进 5-4 揕胸 E6 支（xubi+biancai:55），落 5-5 收 E1；辩才缺口由演练辞令类卡经营补足，hook 模拟该结果
   expect('史实线', g.ending, 'E1');
   if (g.dev <= 45) { pass++; } else { fail++; console.log('✘ 史实线偏离应≤45，实际 ' + g.dev); }
   const need = ['lunjian', 'gaoge', 'tianguang', 'fanshou', 'yishui', 'tuxiong', 'yaonang'];
@@ -208,7 +217,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '3-1': '陈说利害', '3-2': '取真图', '3-3': '购徐夫人匕', '3-4': '以秦舞阳为副',
     '4-1': '和歌而去', '4-2': '细察秦廷关节',
     '5-1': '以名自荐', '5-2': '如常进殿', '5-3': '笑而谢曰', '5-4': '把袖不刺'
-  }, rngHigh, null, g => { if (g.eventId === '5-1') g.attrs.shengwang = Math.max(g.attrs.shengwang, 58); if (g.eventId === '5-3') g.attrs.caixue = Math.max(g.attrs.caixue, 55); }); // 声望/才学缺口由宴饮与读书经营补足——hook 模拟该结果
+  }, rngHigh, null, g => { if (g.eventId === '5-1') g.attrs.shengwang = Math.max(g.attrs.shengwang, 58); if (g.eventId === '5-3') g.attrs.biancai = Math.max(g.attrs.biancai, 55); }); // 声望/辩才缺口由宴饮与演练辞令经营补足——hook 模拟该结果（5-3 笑谢 biancai:40，校准后；5-4 把袖路由不查辩才）
   expect('稳健线（曹沫）', g.ending, 'E4');
   if (has(g, 'caomo')) { pass++; console.log('✔ 结局成就解锁：曹沫再生'); }
   else { fail++; console.log('✘ E4 线应解锁成就 caomo'); }
@@ -223,7 +232,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '3-1': '陈说利害', '3-2': '取真图', '3-3': '购徐夫人匕', '3-4': '以秦舞阳为副',
     '4-1': '和歌而去', '4-2': '细察秦廷关节',
     '5-1': '以名自荐', '5-2': '如常进殿', '5-3': '笑而谢曰', '5-4': '拂袖而退'
-  }, rngHigh, null, g => { if (g.eventId === '5-1') g.attrs.shengwang = Math.max(g.attrs.shengwang, 58); if (g.eventId === '5-3') g.attrs.caixue = Math.max(g.attrs.caixue, 55); }); // 同 E4
+  }, rngHigh, null, g => { if (g.eventId === '5-1') g.attrs.shengwang = Math.max(g.attrs.shengwang, 58); if (g.eventId === '5-3') g.attrs.biancai = Math.max(g.attrs.biancai, 55); }); // 同 E4（辩才缺口由演练辞令经营补足；校准后 5-3 笑谢仅需 biancai:40，拂袖路由本身不查辩才）
   expect('稳健线（拂袖）', g.ending, 'E5');
   if (has(g, 'fuyi')) { pass++; console.log('✔ 结局成就解锁：拂衣秦廷'); }
   else { fail++; console.log('✘ E5 线应解锁成就 fuyi'); }
@@ -231,7 +240,8 @@ function has(g, ach) { return g.ach.includes(ach); }
 
 /* ---------- 6. 逆天线 → E6 咸阳一击 ---------- */
 {
-  // 才学缺口（路线 61/65）由行动卡闭门读书/著书补足——hook 模拟该经营结果
+  // 辩才缺口由演练辞令类卡经营补足——hook 模拟该经营结果。校准后档位：5-3 笑谢 biancai:40；
+  // 5-4 揕胸 E6 支 xubi+biancai:55+zgMax:49，E7 支 biancai:60——E6 注入档 [55,60)：钳上界 59（≥60 进 E7 判定支）
   const { g } = play('normal', {
     '0-1': '长揖称谢', '0-2': '长揖谢罪', '0-3': '西入燕',
     '1-1': '独酌旁观', '1-2': '与论天下大势', '1-3': '静观时局',
@@ -239,7 +249,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '3-1': '陈说利害', '3-2': '取真图', '3-3': '购徐夫人匕', '3-4': '以秦舞阳为副',
     '4-1': '和歌而去', '4-2': '细察秦廷关节',
     '5-1': '千金买通', '5-2': '如常进殿', '5-3': '笑而谢曰', '5-4': '揕其胸'
-  }, rngHigh, null, g => { if (g.eventId === '5-3' || g.eventId === '5-4') g.attrs.caixue = Math.max(g.attrs.caixue, 70); });
+  }, rngHigh, null, g => { if (g.eventId === '5-3' || g.eventId === '5-4') { g.attrs.biancai = Math.max(g.attrs.biancai, 55); if (g.attrs.biancai > 59) g.attrs.biancai = 59; } });
   expect('逆天线（刺成）', g.ending, 'E6');
   if (has(g, 'yiji')) { pass++; console.log('✔ 结局成就解锁：咸阳一击'); }
   else { fail++; console.log('✘ E6 线应解锁成就 yiji'); }
@@ -257,7 +267,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '5-1': '千金买通', '5-2': '如常进殿', '5-4': '与渐离并起'
   }, rngHigh, null, g => {
     if (g.eventId === '3-4' && !g.flags['jianli-tong']) g.attrs.junxin = Math.max(g.attrs.junxin, 42);
-    if (g.eventId === '5-4') g.attrs.caixue = Math.max(g.attrs.caixue, 72);
+    if (g.eventId === '5-4') g.attrs.biancai = Math.max(g.attrs.biancai, 60); // 5-4 并起→E7 路由 biancai:60（校准后，原 70）——辩才缺口由演练辞令类卡经营补足
   });
   expect('逆天线（双客）', g.ending, 'E7');
   if (trace.some(t => t[0] === '5-2' && t[1].indexOf('如常进殿') >= 0) && !trace.some(t => t[0] === '5-3')) { pass++; console.log('✔ 无秦舞阳时 5-3 舞阳事件跳过'); }
@@ -286,7 +296,7 @@ function has(g, ach) { return g.ach.includes(ach); }
     '3-1': '陈说利害', '3-2': '取真图', '3-3': '购徐夫人匕', '3-4': '以秦舞阳为副',
     '4-1': '和歌而去', '4-2': '直趋咸阳',
     '5-1': '坐等召见', '5-2': '如常进殿', '5-3': '笑而谢曰'
-  });
+  }, rngHigh, null, g => { if (g.eventId === '5-3') g.attrs.biancai = Math.min(g.attrs.biancai, 36); }); // 辩才经济校准后 5-3 门槛 50→40，该线天然 41–44+笑谢 eff+3 反过门——压低 biancai 保住 shangdian 覆盖：引擎先结算 eff 再判路由（36+3=39<40），笑谢失败死在上殿
   expect('失败线（上殿）', g.ending, 'E8', 'shangdian');
 }
 
@@ -328,19 +338,20 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 词条缺定义：' + missing.join('、')); }
 
   const bad = [];
+  const ZG_WHITE = { 'JK-ACT-21': 3, 'JK-ACT-41': -4 }; // 威胁值白名单：仅此两卡可挂 eff.zg 且值固定
   D.ACTIONS.forEach(a => {
     const eff = a.eff || {};
     Object.keys(eff.attrs || {}).forEach(k => { if (Math.abs(eff.attrs[k]) > 8) bad.push(a.id + ' ' + k); });
-    if (eff.zg && Math.abs(eff.zg) > 5) bad.push(a.id + ' zg');
-    if (eff.flags || eff.rmflags || eff.hist || eff.merit) bad.push(a.id + ' 干扰结局树字段');
+    if (eff.zg && ZG_WHITE[a.id] !== eff.zg) bad.push(a.id + ' zg=' + eff.zg);
+    if (eff.flags || eff.rmflags || eff.hist || eff.merit || eff.ach) bad.push(a.id + ' 干扰结局树字段');
     if (eff.dev) bad.push(a.id + ' dev');
   });
   const pools = [];
   for (let ci = 0; ci <= 5; ci++) pools.push(D.ACTIONS.filter(a => (a.chapters || [0, 5])[0] <= ci && ci <= (a.chapters || [0, 5])[1]).length);
-  if (D.ACTIONS.length === 42 && bad.length === 0 && pools.every(n => n === 12)) { pass++; console.log('✔ 42 个行动数据卫生：单项 ≤±8、zg ≤±5、每章池 12（' + pools.join('/') + '）'); }
-  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + pools.join('/'))); }
+  if (D.ACTIONS.length === 56 && bad.length === 0 && pools.every(n => n === 16)) { pass++; console.log('✔ 56 个行动数据卫生（卡牌 v2）：单项 ≤±8、dev 恒 0、无 flags/hist/merit/ach/rmflags、zg 白名单（JK-ACT-21 +3 / JK-ACT-41 -4）、每章池 16（' + pools.join('/') + '）'); }
+  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + pools.join('/') + ' 总数 ' + D.ACTIONS.length)); }
 
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   if (D.HIDDEN.init === 20 && D.SCENARIO.id === 'jingke') {
     g.start();
     const ok = g.zg === 20 && g.zgWord() === '不以为意';
@@ -368,7 +379,7 @@ function has(g, ach) { return g.ach.includes(ach); }
 
 /* ---------- 13. 失宠结算入局后方生效（PERSIST.junxinFrom=2）：章首持续与即时阈值同口径 ---------- */
 {
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start();
   const w0 = g.attrs.weiji;
   const firedEarly = g.introNotes.some(n => n.indexOf('失宠于上') >= 0);
@@ -382,6 +393,85 @@ function has(g, ach) { return g.ach.includes(ach); }
   const firedAt2 = g.introNotes.some(n => n.indexOf('失宠于上') >= 0);
   if (!firedEarly && !firedInstant && firedAt2 && g.attrs.weiji === w1 + 10) { pass++; console.log('✔ 失宠结算：序章/一章不触发（未识≠失宠），入局后正常生效'); }
   else { fail++; console.log('✘ 失宠生效口径异常：early=' + firedEarly + ' instant=' + firedInstant + ' at2=' + firedAt2 + ' weiji=' + g.attrs.weiji); }
+}
+
+/* ---------- 14. 年龄系统（v1.9，AGE init 30）：章首定龄 30/31/34/35/36/36，低龄段无【春秋渐高】衰减注、体魄不衰减 ---------- */
+{
+  const ages = [30, 31, 34, 35, 36, 36];
+  let okAll = true; const detail = [];
+  for (let ci = 0; ci < ages.length; ci++) {
+    const g = mkGame('normal', rngHigh);
+    g.randomOn = false; g.start();
+    const t0 = g.attrs.tupo;
+    g.enterChapter(ci);
+    const noNote = !g.introNotes.some(n => n.indexOf('春秋渐高') >= 0);
+    if (!(g.age === ages[ci] && g.attrs.tupo === t0 && noNote)) { okAll = false; detail.push('c' + ci + '=' + g.age + '/' + g.attrs.tupo + (noNote ? '' : '/有衰减注')); }
+  }
+  if (okAll) { pass++; console.log('✔ 章首定龄：' + ages.join('/') + '，低龄段无【春秋渐高】衰减注、体魄不衰减'); }
+  else { fail++; console.log('✘ 章首定龄异常：' + detail.join('、')); }
+}
+
+/* ---------- 15. 疾病闭环（v1.9，ILLNESS cost 3 / heal 5）：大病 onset → 治病卡自动发放 → 治愈；体魄归零 → E8/baobing「病殁客舍」 ---------- */
+{
+  // (a) 大病 onset：ill 流 0.0（<发病率）+ 0.0（<大病率）→ major，当即体魄-5/危机+3
+  const g = mkGame('normal', rngHigh, { ill: illSeq([0.0, 0.0]) });
+  g.randomOn = false; g.start(); g.beginEvents();
+  const t0 = g.attrs.tupo;
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }];
+  const r1 = g.playCard(1);
+  const onset = g.ill && g.ill.type === 'major' && g.attrs.tupo === t0 - 5
+    && r1.changes.some(c => c.k === 'tupo' && c.delta === -5 && c.note && c.note.indexOf('沉疴') >= 0)
+    && r1.changes.some(c => c.k === 'weiji' && c.delta === 3 && c.note);
+  // (b) 治病卡自动发放（不占行动池）→ 选它清病、财富-3、体魄+5、倒计时照常推进
+  const offer = g.getOffer();
+  const ci = offer.findIndex(o => o.action && o.action.id === '__cure__');
+  const c0 = g.attrs.caifu, t1 = g.attrs.tupo, rl0 = g.keyRoundsLeft;
+  const r2 = ci > 0 ? g.playCard(ci) : null;
+  const cured = ci > 0 && offer[ci].action.name === '求医问药' && r2 && g.ill === null
+    && g.attrs.caifu === c0 - 3 && g.attrs.tupo === t1 + 5 && g.keyRoundsLeft === rl0 - 1;
+  if (onset && cured) { pass++; console.log('✔ 疾病闭环：大病 onset（体魄-5/危机+3）→「求医问药」自动发放 → 治愈（财富 ' + c0 + '→' + g.attrs.caifu + '、体魄+5、清病、倒计时 ' + rl0 + '→' + g.keyRoundsLeft + '）'); }
+  else { fail++; console.log('✘ 疾病闭环异常：' + JSON.stringify({ onset, cured, ill: g.ill })); }
+  // (c) 病亡：体魄 1 持大病 drain → 体魄归零 → 强制结局 E8/baobing「病殁客舍」
+  const gd = mkGame('normal', rngHigh);
+  gd.randomOn = false; gd.start(); gd.beginEvents();
+  gd.ill = { type: 'major' }; gd.attrs.tupo = 1;
+  gd.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }];
+  const rd = gd.playCard(1);
+  const dead = rd && rd.forcedEnding === true;
+  gd.proceed();
+  if (dead && gd.ending && gd.ending.id === 'E8' && gd.ending.variant === 'baobing' && gd.ending.name === '病殁客舍') { pass++; console.log('✔ 病亡：体魄归零 → E8/baobing「病殁客舍」'); }
+  else { fail++; console.log('✘ 病亡异常：' + JSON.stringify({ dead, end: gd.ending && (gd.ending.id + '/' + gd.ending.variant) })); }
+}
+
+/* ---------- 16. 无收益递减（卡牌 v2，ACTION_RULES.diminish=false）：同卡连用 3 次收益逐次完全相同，getOffer diminishing 恒 false ---------- */
+{
+  const g = mkGame('normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  const deltas = [], useCounts = [];
+  for (let k = 0; k < 3; k++) {
+    g.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }]; // 著书立说：才学+3/声望+1/危机+2
+    const r = g.playCard(1);
+    useCounts.push(r.useCount);
+    deltas.push(['caixue', 'shengwang', 'weiji'].map(kk => r.changes.find(c => c.k === kk).delta).join('/'));
+  }
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }];
+  const oUsed = g.getOffer()[1];
+  if (useCounts.join(',') === '1,2,3' && deltas.every(d => d === '3/1/2') && oUsed.usedCount === 3 && oUsed.diminishing === false) { pass++; console.log('✔ 无递减：JK-ACT-1 连用 3 次收益逐次相同（才学+3/声望+1/危机+2），diminishing 恒 false、useCount 照计'); }
+  else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
+}
+
+/* ---------- 17. 政绩经济存在性（v1.9）：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2）、事件侧 2-2/3-1 hist 各 +5、全书零 req.zhengji ---------- */
+{
+  const zj = {};
+  D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
+  const cardsOk = JSON.stringify(zj) === JSON.stringify({ 'JK-ACT-22': 1, 'JK-ACT-49': 2, 'JK-ACT-51': 2 });
+  const zjEvents = [];
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
+  const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['2-2:5:hist', '3-1:5:hist']);
+  let reqZj = 0;
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
+  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2），事件侧 2-2/3-1 hist 各+5，全书零 req.zhengji'); }
+  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);

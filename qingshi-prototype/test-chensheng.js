@@ -6,8 +6,17 @@ const E = require('./engine.js');
 const rngHigh = () => 0.99;
 const rngLow = () => 0.01;
 
+/* v1.9 疾病系统（陈胜本 ILLNESS 开启）：出牌即掷发病（ill 流）。
+ * 全套件统一经 mkGame 构造 Game，默认注入 ill 流恒 0.99（≥发病率上限 0.35，永不发病），
+ * 保证既有路线断言的确定性轨迹不受新增随机源干扰；疾病专项用例（#15）经 streams.ill 自注序列。 */
+const ILL_NEVER = () => 0.99;
+function illSeq(vals) { let i = 0; return () => vals[Math.min(i++, vals.length - 1)]; }
+function mkGame(diffKey, rng, streams) {
+  return new E.Game(D, diffKey, rng, Object.assign({ ill: ILL_NEVER }, streams));
+}
+
 function play(diffKey, script, rng, endScript, hook, streams) {
-  const g = new E.Game(D, diffKey, rng || rngHigh, streams);
+  const g = mkGame(diffKey, rng || rngHigh, streams);
   g.randomOn = false;
   g.start();
   let guard = 0;
@@ -55,7 +64,7 @@ function play(diffKey, script, rng, endScript, hook, streams) {
 }
 
 function driveTo(stopId, picks) {
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   g.randomOn = false;
   g.start();
   let guard = 0;
@@ -262,13 +271,13 @@ function has(g, ach) { return g.ach.includes(ach); }
 
 /* ---------- 9. N1/N2 异变触发（众心 / 宽察 / 章邯提前） ---------- */
 {
-  const g1 = new E.Game(D, 'normal', rngHigh);
+  const g1 = mkGame('normal', rngHigh);
   g1.randomOn = false; g1.start();
   g1.attrs.junxin = 50;
   g1.enterChapter(1);
   if (g1.flags.zhongxin && g1.introNotes.some(n => n.indexOf('人心') >= 0)) { pass++; console.log('✔ N1 异变：君心≥45 众心可用'); }
   else { fail++; console.log('✘ N1 异变未触发'); }
-  const g2 = new E.Game(D, 'normal', rngHigh);
+  const g2 = mkGame('normal', rngHigh);
   g2.randomOn = false; g2.start();
   g2.dev = 45;
   g2.enterChapter(4);
@@ -300,17 +309,18 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 词条缺定义：' + missing.join('、')); }
 
   const bad = [];
+  const ZG_WHITE = {}; // 威胁值白名单：陈胜本无任何 eff.zg 卡（精确比对）
   D.ACTIONS.forEach(a => {
     const eff = a.eff || {};
     Object.keys(eff.attrs || {}).forEach(k => { if (Math.abs(eff.attrs[k]) > 8) bad.push(a.id + ' ' + k); });
-    if (eff.zg && Math.abs(eff.zg) > 5) bad.push(a.id + ' zg');
-    if (eff.flags || eff.rmflags || eff.hist || eff.merit) bad.push(a.id + ' 干扰结局树字段');
+    if (eff.zg && ZG_WHITE[a.id] !== eff.zg) bad.push(a.id + ' zg=' + eff.zg);
+    if (eff.flags || eff.rmflags || eff.hist || eff.merit || eff.ach) bad.push(a.id + ' 干扰结局树字段');
     if (eff.dev) bad.push(a.id + ' dev');
   });
   const pools = [];
   for (let ci = 0; ci <= 6; ci++) pools.push(D.ACTIONS.filter(a => (a.chapters || [0, 6])[0] <= ci && ci <= (a.chapters || [0, 6])[1]).length);
-  if (D.ACTIONS.length === 48 && bad.length === 0 && pools.every(n => n === 12)) { pass++; console.log('✔ 48 个行动数据卫生：单项 ≤±8、zg ≤±5、每章池 12（' + pools.join('/') + '）'); }
-  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + pools.join('/'))); }
+  if (D.ACTIONS.length === 64 && bad.length === 0 && pools.every(n => n === 16)) { pass++; console.log('✔ 64 个行动数据卫生（卡牌 v2）：单项 ≤±8、dev 恒 0、无 flags/hist/merit/ach/rmflags、零 zg 卡、每章池 16（' + pools.join('/') + '）'); }
+  else { fail++; console.log('✘ 行动数据卫生异常：' + (bad.join('；') || '池大小 ' + pools.join('/') + ' 总数 ' + D.ACTIONS.length)); }
 
   let badach = [];
   Object.values(D.ENDINGS).forEach(e => {
@@ -319,7 +329,7 @@ function has(g, ach) { return g.ach.includes(ach); }
   });
   if (badach.length === 0) { pass++; } else { fail++; console.log('✘ 结局成就悬挂引用：' + badach.join('、')); }
 
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   g.start();
   const ok = g.zg === 15 && g.zgWord() === '众心如一';
   g.zg = 55;
@@ -329,7 +339,7 @@ function has(g, ach) { return g.ach.includes(ach); }
 
 /* ---------- 12. 失宠结算称王后方生效（PERSIST.junxinFrom=3） ---------- */
 {
-  const g = new E.Game(D, 'normal', rngHigh);
+  const g = mkGame('normal', rngHigh);
   g.randomOn = false; g.start();
   g.attrs.junxin = 10;
   g.enterChapter(2);
@@ -344,7 +354,7 @@ function has(g, ach) { return g.ach.includes(ach); }
 /* ---------- 13. 险招定制失败：5-2 立诛田臧 effFail/resFail（GDD 附录 J） ---------- */
 {
   // 险招骰改走 risk 流：常量骰经 streams.risk 注入（0.8 → roll 81）
-  const g = new E.Game(D, 'normal', () => 0.8, { risk: () => 0.8 });
+  const g = mkGame('normal', () => 0.8, { risk: () => 0.8 });
   g.randomOn = false; g.start(); g.enterChapter(5); g.eventId = '5-2';
   g.flags.wuguang = true; g.attrs.junxin = 40; // 需 50，差 10 → 30%
   g.beginRounds(); g.playCard(0);
@@ -356,6 +366,85 @@ function has(g, ach) { return g.ach.includes(ach); }
     && g.phase === 'event' && g.getOptions()[1].locked === true) {
     pass++; console.log('✔ 险招定制失败：立诛田臧 roll 81 ＞ 30，resFail/effFail（危机+8 君心-3）生效，选项烧毁');
   } else { fail++; console.log('✘ 定制险招异常：' + JSON.stringify({ rate: opts[1].risky && opts[1].risky.rate, failed: r && r.failed, phase: g.phase })); }
+}
+
+/* ---------- 14. 年龄系统（v1.9，AGE init 35）：章首定龄 35/35/35/35/35/35/36，低龄段无【春秋渐高】衰减注、体魄不衰减 ---------- */
+{
+  const ages = [35, 35, 35, 35, 35, 35, 36];
+  let okAll = true; const detail = [];
+  for (let ci = 0; ci < ages.length; ci++) {
+    const g = mkGame('normal', rngHigh);
+    g.randomOn = false; g.start();
+    const t0 = g.attrs.tupo;
+    g.enterChapter(ci);
+    const noNote = !g.introNotes.some(n => n.indexOf('春秋渐高') >= 0);
+    if (!(g.age === ages[ci] && g.attrs.tupo === t0 && noNote)) { okAll = false; detail.push('c' + ci + '=' + g.age + '/' + g.attrs.tupo + (noNote ? '' : '/有衰减注')); }
+  }
+  if (okAll) { pass++; console.log('✔ 章首定龄：' + ages.join('/') + '，低龄段无【春秋渐高】衰减注、体魄不衰减'); }
+  else { fail++; console.log('✘ 章首定龄异常：' + detail.join('、')); }
+}
+
+/* ---------- 15. 疾病闭环（v1.9，ILLNESS cost 3 / heal 5）：大病 onset → 治病卡自动发放 → 治愈；体魄归零 → E8/baobing「病殁军中」 ---------- */
+{
+  // (a) 大病 onset：ill 流 0.0（<发病率）+ 0.0（<大病率）→ major，当即体魄-5/危机+3
+  const g = mkGame('normal', rngHigh, { ill: illSeq([0.0, 0.0]) });
+  g.randomOn = false; g.start(); g.beginEvents();
+  const t0 = g.attrs.tupo;
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'CS-ACT-1' }];
+  const r1 = g.playCard(1);
+  const onset = g.ill && g.ill.type === 'major' && g.attrs.tupo === t0 - 5
+    && r1.changes.some(c => c.k === 'tupo' && c.delta === -5 && c.note && c.note.indexOf('沉疴') >= 0)
+    && r1.changes.some(c => c.k === 'weiji' && c.delta === 3 && c.note);
+  // (b) 治病卡自动发放（不占行动池）→ 选它清病、财富-3、体魄+5、倒计时照常推进
+  const offer = g.getOffer();
+  const ci = offer.findIndex(o => o.action && o.action.id === '__cure__');
+  const c0 = g.attrs.caifu, t1 = g.attrs.tupo, rl0 = g.keyRoundsLeft;
+  const r2 = ci > 0 ? g.playCard(ci) : null;
+  const cured = ci > 0 && offer[ci].action.name === '求医问药' && r2 && g.ill === null
+    && g.attrs.caifu === c0 - 3 && g.attrs.tupo === t1 + 5 && g.keyRoundsLeft === rl0 - 1;
+  if (onset && cured) { pass++; console.log('✔ 疾病闭环：大病 onset（体魄-5/危机+3）→「求医问药」自动发放 → 治愈（财富 ' + c0 + '→' + g.attrs.caifu + '、体魄+5、清病、倒计时 ' + rl0 + '→' + g.keyRoundsLeft + '）'); }
+  else { fail++; console.log('✘ 疾病闭环异常：' + JSON.stringify({ onset, cured, ill: g.ill })); }
+  // (c) 病亡：体魄 1 持大病 drain → 体魄归零 → 强制结局 E8/baobing「病殁军中」
+  const gd = mkGame('normal', rngHigh);
+  gd.randomOn = false; gd.start(); gd.beginEvents();
+  gd.ill = { type: 'major' }; gd.attrs.tupo = 1;
+  gd.offer = [{ type: 'key' }, { type: 'action', id: 'CS-ACT-1' }];
+  const rd = gd.playCard(1);
+  const dead = rd && rd.forcedEnding === true;
+  gd.proceed();
+  if (dead && gd.ending && gd.ending.id === 'E8' && gd.ending.variant === 'baobing' && gd.ending.name === '病殁军中') { pass++; console.log('✔ 病亡：体魄归零 → E8/baobing「病殁军中」'); }
+  else { fail++; console.log('✘ 病亡异常：' + JSON.stringify({ dead, end: gd.ending && (gd.ending.id + '/' + gd.ending.variant) })); }
+}
+
+/* ---------- 16. 无收益递减（卡牌 v2，ACTION_RULES.diminish=false）：同卡连用 3 次收益逐次完全相同，getOffer diminishing 恒 false ---------- */
+{
+  const g = mkGame('normal', rngHigh);
+  g.randomOn = false; g.start(); g.beginEvents();
+  const deltas = [], useCounts = [];
+  for (let k = 0; k < 3; k++) {
+    g.offer = [{ type: 'key' }, { type: 'action', id: 'CS-ACT-1' }]; // 聚义宣讲：声望+3/君心+1/危机+2/辩才+1
+    const r = g.playCard(1);
+    useCounts.push(r.useCount);
+    deltas.push(['shengwang', 'junxin', 'weiji', 'biancai'].map(kk => r.changes.find(c => c.k === kk).delta).join('/'));
+  }
+  g.offer = [{ type: 'key' }, { type: 'action', id: 'CS-ACT-1' }];
+  const oUsed = g.getOffer()[1];
+  if (useCounts.join(',') === '1,2,3' && deltas.every(d => d === '3/1/2/1') && oUsed.usedCount === 3 && oUsed.diminishing === false) { pass++; console.log('✔ 无递减：CS-ACT-1 连用 3 次收益逐次相同（声望+3/君心+1/危机+2/辩才+1），diminishing 恒 false、useCount 照计'); }
+  else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
+}
+
+/* ---------- 17. 政绩经济存在性（v1.9，张楚建置之政）：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2）、事件侧 3-1 hist +5、全书零 req.zhengji ---------- */
+{
+  const zj = {};
+  D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
+  const cardsOk = JSON.stringify(zj) === JSON.stringify({ 'CS-ACT-27': 1, 'CS-ACT-30': 1, 'CS-ACT-57': 2 });
+  const zjEvents = [];
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
+  const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['3-1:5:hist']);
+  let reqZj = 0;
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
+  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2），事件侧 3-1 hist +5，全书零 req.zhengji'); }
+  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);

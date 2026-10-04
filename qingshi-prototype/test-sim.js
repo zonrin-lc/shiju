@@ -427,20 +427,31 @@ function expect(name, actual, wantId, wantVariant) {
   if ((g.phase === 'round' || g.phase === 'event') && g.eventId === '0-1') { pass++; } else { fail++; console.log('✘ 行动后事件流被打断：' + g.phase + ' ' + g.eventId); }
 }
 
-/* ---------- 16b. 收益递减跨剧本对照：荆轲本未声明 ACTION_RULES，引擎递减开关保留（第 2 次减半、代价不减、diminishing=true） ---------- */
+/* ---------- 16b. 收益递减跨剧本对照：未声明 ACTION_RULES 的数据递减保留（第 2 次减半、代价不减、diminishing=true） ----------
+ * 对照本原为荆轲、后换韩信；韩信 v1.9 起亦声明 diminish:false（见其套件 #16）——真实剧本已无未声明本，
+ * 故改为内联合成最小 stub 数据（不引用任何真实剧本、未声明 ACTION_RULES），保持「引擎对未声明本保留递减」的断言意图。 */
 {
-  const J = require('./jingke-data.js');
-  const gj = new E.Game(J, 'normal', rngHigh);
+  const STUB = {
+    ATTRS: [{ k: 'caixue', n: '文才' }, { k: 'weiji', n: '危机', inverse: true }],
+    ATTR_NAMES: { caixue: '文才', weiji: '危机' },
+    INIT: { tupo: 40, wuli: 40, caixue: 40, moulue: 40, biancai: 40, caifu: 40, shengwang: 40, quanshi: 40, zhengji: 0, junxin: 40, weiji: 10 },
+    DIFFICULTY: { normal: { n: '普通', wj: 1.0, corr: 1.0, coef: 1.0, backtrack: 1, lethal: true, hideAttrs: false } },
+    CHAPTERS: [{ id: 'c0', title: '合成测试章', start: 's-1',
+      events: [{ id: 's-1', title: '合成测试事件', options: [{ t: '过场', to: 's-1' }] }] }],
+    ACTIONS: [{ id: 'X-ACT-1', name: '合成测试行动', chapters: [0, 0],
+      eff: { attrs: { caixue: 4, weiji: 2 } } }]
+  };
+  const gj = new E.Game(STUB, 'normal', rngHigh);
   gj.randomOn = false; gj.start(); gj.beginEvents();
-  gj.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }]; // 著书立说：才学+4/声望+2/危机+2
+  gj.offer = [{ type: 'key' }, { type: 'action', id: 'X-ACT-1' }]; // 合成测试行动：才学+4/危机+2（代价）
   const j1 = gj.playCard(1);
-  gj.offer = [{ type: 'key' }, { type: 'action', id: 'JK-ACT-1' }];
+  gj.offer = [{ type: 'key' }, { type: 'action', id: 'X-ACT-1' }];
   const jo2 = gj.getOffer()[1];
   const j2 = gj.playCard(1);
   const d1cx = j1.changes.find(c => c.k === 'caixue').delta, d2cx = j2.changes.find(c => c.k === 'caixue').delta;
   const d1wj = j1.changes.find(c => c.k === 'weiji').delta, d2wj = j2.changes.find(c => c.k === 'weiji').delta;
-  if (d1cx === 4 && d2cx === 2 && d1wj === 2 && d2wj === 2 && jo2.usedCount === 1 && jo2.diminishing === true) { pass++; console.log('✔ 跨剧本对照：荆轲未声明 ACTION_RULES，递减保留（才学+4→+2、代价危机+2 不减、diminishing=true）'); }
-  else { fail++; console.log('✘ 荆轲递减对照异常：' + JSON.stringify({ d1cx, d2cx, d1wj, d2wj, dim: jo2.diminishing })); }
+  if (d1cx === 4 && d2cx === 2 && d1wj === 2 && d2wj === 2 && jo2.usedCount === 1 && jo2.diminishing === true) { pass++; console.log('✔ 跨剧本对照：合成 stub 未声明 ACTION_RULES，递减保留（才学+4→+2、代价危机+2 不减、diminishing=true）'); }
+  else { fail++; console.log('✘ stub 递减对照异常：' + JSON.stringify({ d1cx, d2cx, d1wj, d2wj, dim: jo2.diminishing })); }
 }
 
 /* ---------- 17. 赵高威胁度 ≥50：5-2 拒绝被拖入死线（GDD 4.3 / 5-2-B） ---------- */

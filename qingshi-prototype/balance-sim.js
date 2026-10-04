@@ -226,10 +226,20 @@ function pickCard(stratName, g, rng) {
         for (let i = 1; i < offer.length; i++) if (offer[i].action && offer[i].action.id === 'HX-ACT-4' && !offer[i].locked) return i;
       }
     } else if (SCEN === 'jingke') {
-      // 荆轲 E6 门槛=才学≥65：才学不足优先 著书（JK-ACT-1）/ 读书击剑（JK-ACT-4）
-      if (g.attrs.caixue < 65) {
-        for (let i = 1; i < offer.length; i++) if (offer[i].action && offer[i].action.id === 'JK-ACT-1' && !offer[i].locked) return i;
-        for (let i = 1; i < offer.length; i++) if (offer[i].action && offer[i].action.id === 'JK-ACT-4' && !offer[i].locked) return i;
+      // 荆轲 E6/E7 门槛=辩才（5-4 揕胸 E6 biancai:55 / E7 biancai:60；5-3 笑谢 biancai:40 顺路即过）。
+      // 稀缺度（参照陈胜块口径）：财富是硬门槛生命线（3-3 购徐夫人匕 10 / 5-1 千金买通 10，caifu 恒硬锁不可险招）——
+      // 财富水位不足先打赚钱卡（贩马/风餐/授剑/帮佣/变卖剑饰/燕邸授剑/鬻车/分藏）；辩才优先免费卡
+      // （演练辞令/殿前演礼/听筑/谒田光墓/周旋宾客/抚樊旧部/筑前话别/太子府问安），富裕才打付费辩才卡；
+      // 入 c5 连刷双卡 演练辞令（JK-ACT-40）/ 殿前演礼（JK-ACT-55）（ACTION_RULES 无递减，可连刷）冲刺 55–60。
+      const JK_EARN = ['JK-ACT-9', 'JK-ACT-46', 'JK-ACT-15', 'JK-ACT-48', 'JK-ACT-23', 'JK-ACT-52', 'JK-ACT-54', 'JK-ACT-56'];
+      const JK_BFREE = ['JK-ACT-40', 'JK-ACT-55', 'JK-ACT-13', 'JK-ACT-19', 'JK-ACT-20', 'JK-ACT-25', 'JK-ACT-32', 'JK-ACT-3'];
+      const JK_BCOST = ['JK-ACT-11', 'JK-ACT-14', 'JK-ACT-18', 'JK-ACT-35', 'JK-ACT-2', 'JK-ACT-5'];
+      if (g.attrs.caifu < 12) {
+        for (let i = 1; i < offer.length; i++) if (offer[i].action && JK_EARN.indexOf(offer[i].action.id) >= 0 && !offer[i].locked) return i;
+      }
+      if (g.attrs.biancai < 58) {
+        for (let i = 1; i < offer.length; i++) if (offer[i].action && JK_BFREE.indexOf(offer[i].action.id) >= 0 && !offer[i].locked) return i;
+        if (g.attrs.caifu >= 15) for (let i = 1; i < offer.length; i++) if (offer[i].action && JK_BCOST.indexOf(offer[i].action.id) >= 0 && !offer[i].locked) return i;
       }
     } else if (g.peak.junxin < 60) {
       // 君心峰值不足 60（李斯 E6 门槛）：优先入宫请安（ACT-3），其次托人递简（ACT-28）

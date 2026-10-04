@@ -85,7 +85,9 @@
         mouxie: { name: '谋泄之诛',
           zhuan: '太史公曰：陈豨之举未发，舍人上书告变。吕后不动干戈，一使召信，一狱待罪。信至长乐，钟室门阖。谋泄于人，亦泄于天——帐中百万兵，救不得殿上一命。' },
         weishui: { name: '潍水覆军',
-          zhuan: '太史公曰：信读兵书半生，一战而失其算。潍水合围，沙囊溃堤，汉儿郎溺死者蔽川。信单骑而遁，不知所之。兵无常胜，水无常形——渎之者，其验如响。' }
+          zhuan: '太史公曰：信读兵书半生，一战而失其算。潍水合围，沙囊溃堤，汉儿郎溺死者蔽川。信单骑而遁，不知所之。兵无常胜，水无常形——渎之者，其验如响。' },
+        baobing: { name: '病殁侯邸',
+          zhuan: '太史公曰：陈豨之狱兴，吕后之召三至。信病笃，不能兴，及使至而信已殁于淮阴侯邸——长乐钟室之门洞开，终无所待。信以布衣仗剑，功盖天下，不死于战阵，不死于刑戮，死于床笫之间。或曰：是殆有天幸焉，使信生入钟室，夷三族之名又甚于病殁。然英雄之末路，天亦有不忍观者欤？' }
       }
     }
   };
@@ -99,11 +101,12 @@
   var CHAPTERS = [
     /* ---------- 序章 ---------- */
     {
-      id: 'c0', title: '序章 ｜ 淮阴布衣', sub: '教学章 · 约前 220 前后',
+      id: 'c0', title: '序章 ｜ 淮阴布衣', sub: '教学章 · 约前 220 前后', age: 20,
       summaryNotes: [
         '【教学】上方十一维是你的命数。危机涨满之日，便是钟室门阖之时。',
         '【教学】偏离度记你与史实的距离，只增不减：≤20 循史，21–45 微澜，46–70 改流，71 以上逆天。',
-        '【教学】选项旁带"史"字者，是史书所载韩信的本来面目。循之则稳，违之则波澜自生。'
+        '【教学】选项旁带"史"字者，是史书所载韩信的本来面目。循之则稳，违之则波澜自生。',
+        '【教学】岁月催人——体魄随年齿衰减。体魄低则易病：小病静养两轮自愈，大病须用「求医问药」。病至膏肓，体魄归零，便是殁时。'
       ],
       intro: [
         '秦并天下十余年，驰道从咸阳铺到海边。淮阴这样的小城，只在驿卒换马时被人想起。',
@@ -148,7 +151,7 @@
     },
     /* ---------- 第一章 ---------- */
     {
-      id: 'c1', title: '第一章 ｜ 楚营郎中', sub: '前 208—前 206',
+      id: 'c1', title: '第一章 ｜ 楚营郎中', sub: '前 208—前 206', age: 23,
       summaryNotes: [
         '在楚营的两年，你把兵法想透了，也把"言不用"三个字尝够了。',
         '项羽的帐下不缺勇士，缺的是肯听他一句话的人——可惜你不是那个能被听的人。'
@@ -193,7 +196,7 @@
     },
     /* ---------- 第二章 节点N1 ---------- */
     {
-      id: 'c2', title: '第二章 ｜ 亡楚归汉', sub: '前 206 · 历史节点',
+      id: 'c2', title: '第二章 ｜ 亡楚归汉', sub: '前 206 · 历史节点', age: 25,
       summaryNotes: [
         '从连敖到登坛，中间只隔着一个肯听你把话说完的人。',
         '斋戒三日，设坛具礼。明日之后，汉王的兵，姓韩。'
@@ -270,7 +273,7 @@
     },
     /* ---------- 第三章 ---------- */
     {
-      id: 'c3', title: '第三章 ｜ 还定三秦', sub: '前 206—前 205',
+      id: 'c3', title: '第三章 ｜ 还定三秦', sub: '前 206—前 205', age: 26,
       summaryNotes: [
         '三秦传檄而定。史书说"八月，汉王举兵东出"——四个字背后，是你画了三年的地图。',
         '彭城一败，汉王的五十六万，输给项羽的三万。败军之际，方知谁是砥柱。'
@@ -307,7 +310,7 @@
                  '五十六万人在半天里散了。睢水为之不流——不是形容，是尸首真的堵了河道。',
                  '溃兵像决口的河，漫山奔逃。旗帜、辎重、冠冕，丢了一路。'],
           options: [
-            { t: '收拢溃兵，与上会于荥阳', hist: true, res: '你一路收兵，一路整队：百人为队，千人为营，溃卒到你手里重新成了兵。到荥阳时，你交出去的是一支还能打仗的军队。汉王拉着你的手，半天没说出话。', eff: { attrs: { quanshi: 5, junxin: 8, shengwang: 3, moulue: 2 }, dev: 0 }, to: '3-3' },
+            { t: '收拢溃兵，与上会于荥阳', hist: true, res: '你一路收兵，一路整队：百人为队，千人为营，溃卒到你手里重新成了兵。到荥阳时，你交出去的是一支还能打仗的军队。汉王拉着你的手，半天没说出话。', eff: { attrs: { quanshi: 5, junxin: 8, shengwang: 3, moulue: 2, zhengji: 5 }, dev: 0 }, to: '3-3' },
             { t: '自守成皋，稳住阵脚', res: '你按兵成皋，深沟高垒，楚军三攻不下。战线稳住了，荥阳以西没有再走一步。只是功劳簿上没有你的名字——守住了的仗，史书写得最薄。', eff: { attrs: { quanshi: 3, junxin: -3 }, dev: 3 }, to: '3-3' },
             { t: '趁乱扩军，自壮其势', res: '溃兵是最好的兵源：无家可奔，有仗可打。你的军力涨了一截。军报递到汉王案头，他夸了你一句能干，放下简，又看了很久——那眼神里多了一层东西。', eff: { attrs: { quanshi: 8, weiji: 5 }, dev: 5, zg: 8 }, to: '3-3' }
           ] },
@@ -335,7 +338,7 @@
     },
     /* ---------- 第四章 节点N2 ---------- */
     {
-      id: 'c4', title: '第四章 ｜ 背水·潍水', sub: '前 205—前 203 · 历史节点',
+      id: 'c4', title: '第四章 ｜ 背水·潍水', sub: '前 205—前 203 · 历史节点', age: 28,
       summaryNotes: [
         '井陉口的早晨，三万对二十万。兵书被你翻烂的那一页，今天要用上了。',
         '潍水的水流很急。急到足够把龙且的二十万，送进你的口袋。'
@@ -379,7 +382,7 @@
                  '你下座，亲手解其缚，请他东向坐，执弟子礼。',
                  '满帐愕然。你说：百里奚居虞而虞亡，在秦而秦霸——非愚于虞而智于秦也，用与不用耳。'],
           options: [
-            { t: '师事之，问北略', hist: true, res: '“败军之将，何足言勇？”左车推辞再三，终被你的诚意打动，为你画策：案甲休兵，镇抚赵地，先声后实，传檄燕齐。一席话，替你省了十万兵的粮。', eff: { attrs: { caixue: 5, shengwang: 5, moulue: 3 }, dev: 0, flags: ['zuoche'], hist: 10, ach: 'zuoche' }, to: '4-3' },
+            { t: '师事之，问北略', hist: true, res: '“败军之将，何足言勇？”左车推辞再三，终被你的诚意打动，为你画策：案甲休兵，镇抚赵地，先声后实，传檄燕齐。一席话，替你省了十万兵的粮。', eff: { attrs: { caixue: 5, shengwang: 5, moulue: 3, zhengji: 5 }, dev: 0, flags: ['zuoche'], hist: 10, ach: 'zuoche' }, to: '4-3' },
             { t: '斩之示众', res: '一颗人头落地，换得三军一凛。诸将称善。只是从此之后，降者见你先闭了嘴——天下谋士，绕着你的军旗走。这笔账，要过很多年才看得清。', eff: { attrs: { shengwang: -8, weiji: 5 }, dev: 5, hist: -10 }, to: '4-3' },
             { t: '释而归之', res: '你赠他干粮马匹，放他走了。他回赵地后逢人便说：韩将军，国士也。赵地的民心，竟比破城时还顺了些。', eff: { attrs: { shengwang: 3, moulue: 2 }, dev: 3 }, to: '4-3' }
           ] },
@@ -407,7 +410,7 @@
     },
     /* ---------- 第五章 节点N3 ---------- */
     {
-      id: 'c5', title: '第五章 ｜ 齐王', sub: '前 203 · 历史节点 · 全剧本枢纽',
+      id: 'c5', title: '第五章 ｜ 齐王', sub: '前 203 · 历史节点 · 全剧本枢纽', age: 29,
       summaryNotes: [
         '封王的诏书到的那天，你站在齐王宫的台阶上，看见了汉王眼睛里所有的明天。'
       ],
@@ -450,13 +453,13 @@
               to: [ { if: { quanshi: 70, zgMax: 59, devMin: 46 }, to: { ending: 'E6' } }, { to: { ending: 'E4' } } ] },
             { t: '从汉，但请解兵权归老', res: '“臣愿还兵符，归老淮阴——功已成，名已就，所求者，全此身耳。”话说出口，你自己先静了一瞬。蒯通看了你很久，拱手：将军能下这个决心，胜得过百万兵。', eff: { attrs: { quanshi: -15, weiji: -10 }, dev: 15 },
               to: [ { if: { shengwang: 50 }, to: { ending: 'E5' } }, { to: 'NEXT' } ] },
-            { t: '阳从阴蓄，徐图其后', req: { caixue: 65 }, res: '你谢了蒯通，也谢了汉王。两封回信措辞都极恭顺，字缝里却藏着两套心思——只有你自己知道，哪一封是真的。从今夜起，你写的每个字都要读两遍：一遍给别人看，一遍给自己。', eff: { attrs: { weiji: 15, moulue: 3 }, dev: 15, flags: ['xuli'] }, to: 'NEXT' }
+            { t: '阳从阴蓄，徐图其后', req: { moulue: 65 }, res: '你谢了蒯通，也谢了汉王。两封回信措辞都极恭顺，字缝里却藏着两套心思——只有你自己知道，哪一封是真的。从今夜起，你写的每个字都要读两遍：一遍给别人看，一遍给自己。', eff: { attrs: { weiji: 15, moulue: 3 }, dev: 15, flags: ['xuli'] }, to: 'NEXT' }
           ] }
       ]
     },
     /* ---------- 第六章 ---------- */
     {
-      id: 'c6', title: '第六章 ｜ 云梦与钟室', sub: '前 202—前 196（从汉线）',
+      id: 'c6', title: '第六章 ｜ 云梦与钟室', sub: '前 202—前 196（从汉线）', age: 35,
       summaryNotes: [
         '史书行到此处，只剩最后一页。云梦的云，长乐的钟，都在这一页里。'
       ],
@@ -728,169 +731,222 @@
       ] }
   };
 
-  /* ============ 主动行动（行动卡回合制；通用 6 + 章定制 6，每章池恒 12，共 48） ============
-   * 数值口径：单项 ≤±8、zg ≤±5、不写 flags/hist/merit、dev 恒 0。
+  /* ============ 主动行动（行动卡回合制；通用 8 + 章定制 8，每章池恒 16，共 64） ============
+   * 数值口径：单项 ≤±8、zg ≤±5、不写 flags/hist/merit/ach、dev 恒 0（同李斯本附录 C 规范）。
+   * v2 卡牌改版（接入自李斯/荆轲本）：收益全面缩窄（非危机正收益 5→3/4→3/3→2/2→1，
+   * 危机负收益 -8→-5/-6→-4/-5→-3/-4→-3/-3→-2/-2→-1；财富支付、危机正值、属性负值等代价项不动），
+   * 通用池补 2 张体质卡（HX-ACT-49/50），各章专属补 2 张（HX-ACT-51~64）；ACTION_RULES.diminish=false。
+   * 政绩经济：卡侧 HX-ACT-25/39/59（+1/+2/+2，治军安邦、治齐之政），事件 hist 3-2 收拢溃兵 +5、4-2 师事左车 +5（见 CHAPTERS）。
    * chapters:[起,止]：0 淮阴 / 1 楚营 / 2 汉中 / 3 三秦 / 4 赵齐 / 5 齐王 / 6 楚与长安。 */
   var ACTIONS = [
     /* ---- 通用行动（全章可用） ---- */
     { id: 'HX-ACT-1', name: '著书立说', desc: '闭门著兵法一卷', chapters: [0, 6],
-      eff: { attrs: { caixue: 4, shengwang: 2, weiji: 2, moulue: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 3, shengwang: 1, weiji: 2, moulue: 1, tupo: -1 }, dev: 0 },
       res: '数月闭门，兵书成卷，笔削如点兵。传抄者众——也有人抄给了不想让你出名的人。' },
     { id: 'HX-ACT-2', name: '置酒高会', desc: '置酒结客（财富-8）', req: { caifu: 8 }, chapters: [0, 6],
-      eff: { attrs: { caifu: -8, shengwang: 4, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -8, shengwang: 3, junxin: 1, biancai: 1 }, dev: 0 },
       res: '一场大宴，水陆毕陈，宾主尽欢。散场时灯火阑珊，多了几个肯替你说话的人。' },
     { id: 'HX-ACT-3', name: '入宫问安', desc: '趋朝问安，固宠于君（需归汉）', req: { minChapter: 2 }, chapters: [0, 6],
-      eff: { attrs: { junxin: 5, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 3, weiji: 2, biancai: 1 }, dev: 0 },
       res: '你在殿下站了两个时辰，换来三句问话。值。政敌们说你谄，你说他们酸。' },
     { id: 'HX-ACT-4', name: '闭门读书', desc: '谢客静修，温故兵书', chapters: [0, 6],
-      eff: { attrs: { caixue: 3, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: -1 }, dev: 0 },
       res: '门一关，是非就进不来了。竹简翻动的声音，是乱世里难得的清净。' },
     { id: 'HX-ACT-5', name: '散财养士', desc: '厚币招贤（财富-8）', req: { caifu: 8 }, chapters: [0, 6],
-      eff: { attrs: { caifu: -8, weiji: -6, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -8, weiji: -4, shengwang: 2 }, dev: 0 },
       res: '千金散尽，门下多了几十张嘴。也多了几十双眼睛——替你看路，也替你望风。' },
     { id: 'HX-ACT-6', name: '称病蛰伏', desc: '闭门称病，避人锋芒（需归汉）', req: { minChapter: 2 }, chapters: [0, 6],
-      eff: { attrs: { weiji: -8, quanshi: -3, junxin: -2, tupo: 3 }, dev: 0 },
+      eff: { attrs: { weiji: -5, quanshi: -3, junxin: -2, tupo: 2 }, dev: 0 },
       res: '病假条递上去，朝堂少了一个靶子。探病的人来了几拨，真心难辨。' },
+    /* ---- 通用行动（v2：习武养身，全章可用） ---- */
+    { id: 'HX-ACT-49', name: '走马骑射', desc: '校场驰射，强筋壮骨', chapters: [0, 6],
+      eff: { attrs: { wuli: 2, tupo: 1, caifu: -1 }, dev: 0 },
+      res: '天未亮透，你已在校场跑了三趟马、射空两壶箭。马是借的，箭是自己削的——大将的膂力，也是一箭一箭喂出来的。' },
+    { id: 'HX-ACT-50', name: '导引将息', desc: '调息导引，养精神于未衰', chapters: [0, 6],
+      eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
+      res: '你闭户调息，依图导引，吐纳之间气血渐顺。军报堆在案上没有拆——将者，先能将息自己，才将得动万人。' },
 
     /* ---- 章 0：淮阴 ---- */
     { id: 'HX-ACT-7', name: '替人代笔', desc: '代写书信讼状，以笔糊口', chapters: [0, 0],
-      eff: { attrs: { caifu: 4, shengwang: -2, caixue: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2, caixue: 1 }, dev: 0 },
       res: '你的状纸写得刀刀见骨，原告被告都怕你。润笔不多，够买三日饭——饭粗，笔利。' },
     { id: 'HX-ACT-8', name: '整理兵书', desc: '抄理旧卷，温故知新', chapters: [0, 0],
-      eff: { attrs: { caixue: 4, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 3, weiji: 2, moulue: 1 }, dev: 0 },
       res: '翻烂的兵书重新抄理一遍。有些句子，抄着抄着就长进了骨头里。' },
     { id: 'HX-ACT-9', name: '河边钓叟', desc: '垂纶城下，且放形骸', chapters: [0, 0],
-      eff: { attrs: { weiji: -4, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -3, tupo: 1 }, dev: 0 },
       res: '垂纶一下午，鱼没有，心静了。漂母的饭香从下游飘过来——那是你还不起、也忘不掉的味道。' },
     { id: 'HX-ACT-10', name: '接济邻里', desc: '分粮周急（财富-3）', req: { caifu: 3 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -3, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2 }, dev: 0 },
       res: '你自己也不宽裕，还是分了一半出去。街坊都记着——淮阴城小，谁家锅里几粒米，人人知道。' },
     { id: 'HX-ACT-11', name: '市上卖剑', desc: '鬻剑于市，以资川旅', chapters: [0, 0],
-      eff: { attrs: { caifu: 5, shengwang: -2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2 }, dev: 0 },
       res: '剑卖了个好价钱，买剑的是个游侠儿。他问你来路，你只说：旧主不用了。' },
     { id: 'HX-ACT-12', name: '夜观星象', desc: '仰观天象，默察大势', chapters: [0, 0],
-      eff: { attrs: { caixue: 2, weiji: -2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 1, weiji: -1, moulue: 1 }, dev: 0 },
       res: '星斗稀微，银河斜挂。天下的大势在你眼里一点点成形——比兵书上的图，活。' },
+    { id: 'HX-ACT-51', name: '晨起击剑', desc: '荒郊试剑，拳脚与剑俱进', chapters: [0, 0],
+      eff: { attrs: { wuli: 2, tupo: 1 }, dev: 0 },
+      res: '城东的荒坡上没有看客，你把一套剑走了十遍，走到汗出透衣。看相的人说你手无缚鸡之力——那是他们没见过你晨起的样子。' },
+    { id: 'HX-ACT-52', name: '舂米佣作', desc: '为人佣工，气力换钱', chapters: [0, 0],
+      eff: { attrs: { caifu: 2, tupo: 1 }, dev: 0 },
+      res: '你替米行舂了十日的米，肩上磨出茧，囊中多了几钱。掌柜笑你：带剑的人也来舂米？你笑笑——剑要吃饭，人更要。' },
 
     /* ---- 章 1：楚营 ---- */
     { id: 'HX-ACT-13', name: '阵前演武', desc: '校场练兵，以武服众', chapters: [1, 1],
-      eff: { attrs: { quanshi: 3, shengwang: 2, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, shengwang: 1, weiji: 2, wuli: 1 }, dev: 0 },
       res: '三场演武，号令分明，士卒心服。老兵蹲在壕边说：这小子，像个带兵的。' },
     { id: 'HX-ACT-14', name: '记室抄书', desc: '为记室抄写军令', chapters: [1, 1],
-      eff: { attrs: { caixue: 3 }, dev: 0 },
+      eff: { attrs: { caixue: 2 }, dev: 0 },
       res: '军令抄写三百遍，手腕酸了。楚军的虚实，也在你心里抄了一遍。' },
     { id: 'HX-ACT-15', name: '结交楚将', desc: '折节下交（财富-3）', req: { caifu: 3 }, chapters: [1, 1],
-      eff: { attrs: { caifu: -3, shengwang: 3, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2, biancai: 1 }, dev: 0 },
       res: '三碗浊酒下肚，换来几个拍胸脯的臂膀。他日用不用得着，谁也说不准。' },
     { id: 'HX-ACT-16', name: '守护辎重', desc: '押运粮草，以勤自效', chapters: [1, 1],
-      eff: { attrs: { caifu: 3, weiji: 2, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 2, weiji: 2, tupo: 1 }, dev: 0 },
       res: '粮道三百里，昼行夜守，颗粒无损。上官在册子上记了你一笔——小官的功劳，就是这样一笔一笔攒的。' },
     { id: 'HX-ACT-17', name: '观项王用兵', desc: '观霸王行军布阵', chapters: [1, 1],
-      eff: { attrs: { caixue: 3, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: 2, moulue: 1 }, dev: 0 },
       res: '你站在戟后看他排兵布阵：他的勇你看懂了，他的短你也看懂了。这一课，值千金。' },
     { id: 'HX-ACT-18', name: '帐外听令', desc: '值夜执戟，近闻枢机', chapters: [1, 1],
-      eff: { attrs: { junxin: 2, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 1, weiji: 2, moulue: 1 }, dev: 0 },
       res: '大帐里的每一句话你都听见了：范增咳着，项羽笑着，你的策论压着。听见了，也就死心了。' },
+    { id: 'HX-ACT-53', name: '较射夺彩', desc: '军中较射，以技立名', chapters: [1, 1],
+      eff: { attrs: { wuli: 2, shengwang: 1, weiji: 1 }, dev: 0 },
+      res: '辕门较射，你三矢皆中鹄，彩头是一坛酒。扛酒回营的路上有人拦你讨教——楚营里，弓马比策论好使人记住。' },
+    { id: 'HX-ACT-54', name: '负粮疾行', desc: '随队负重，脚力换赏', chapters: [1, 1],
+      eff: { attrs: { tupo: 2, caifu: 1 }, dev: 0 },
+      res: '转饷的队伍缺人，你顶了上去，负重六十里不堕队。押队的军吏多给了半日的口粮钱——力气换的，干净。' },
 
     /* ---- 章 2：汉中 ---- */
     { id: 'HX-ACT-19', name: '巡营核粮', desc: '亲巡诸营，勾稽粮账', chapters: [2, 2],
-      eff: { attrs: { caifu: 3, caixue: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 2, caixue: 1, wuli: 1 }, dev: 0 },
       res: '三笔假账被你翻了出来，粮官当场面如土色。粮官恨你，士卒念你——账清的人，从来两头不讨好。' },
     { id: 'HX-ACT-20', name: '修缮仓廒', desc: '修仓固廪，以备军需（财富-3）', req: { caifu: 3 }, chapters: [2, 2],
-      eff: { attrs: { caifu: -3, quanshi: 3, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, quanshi: 2, tupo: 1 }, dev: 0 },
       res: '新修的仓廒防雨防鼠，可支三月。汉王听后点了一次头——王的一次点头，够小吏记半辈子。' },
     { id: 'HX-ACT-21', name: '结识同僚', desc: '与汉中官吏交游', chapters: [2, 2],
-      eff: { attrs: { shengwang: 3, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { shengwang: 2, junxin: 1, biancai: 1 }, dev: 0 },
       res: '酒过三巡，萧何府上的长史与你换了名刺。路，就是这样一条一条接上的。' },
     { id: 'HX-ACT-22', name: '上书言事', desc: '以书陈策，自达于上', chapters: [2, 2],
-      eff: { attrs: { junxin: 2, caixue: 3 }, dev: 0 },
+      eff: { attrs: { junxin: 1, caixue: 2 }, dev: 0 },
       res: '奏书递上去了，如泥牛入海。没有回音——但你知道有人读了，读的人比你官大。' },
     { id: 'HX-ACT-23', name: '演兵示法', desc: '为诸将演示阵法', chapters: [2, 2],
-      eff: { attrs: { quanshi: 4, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 3, weiji: 2, wuli: 1 }, dev: 0 },
       res: '阵法开合，观者无声。散场后有人回去就把你的图样抄走了——抄得走图，抄不走脑子。' },
     { id: 'HX-ACT-24', name: '结交郎官', desc: '纳交殿前（财富-3）', req: { caifu: 3 }, chapters: [2, 2],
-      eff: { attrs: { caifu: -3, junxin: 2, shengwang: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, junxin: 1, shengwang: 1, biancai: 1 }, dev: 0 },
       res: '殿前执戟的几个郎官，与你换了名刺。大王昨日的喜怒，今晨你就知道了。' },
+    { id: 'HX-ACT-55', name: '教阅什伍', desc: '教练新卒，什伍相保', chapters: [2, 2],
+      eff: { attrs: { quanshi: 2, wuli: 1 }, dev: 0 },
+      res: '你把汉中新募的什伍重新编队，教旗鼓、教号令、教同伍相救。半月之后，乌合之众走得像一支兵了。' },
+    { id: 'HX-ACT-56', name: '踏勘仓道', desc: '亲勘粮道，以足量山', chapters: [2, 2],
+      eff: { attrs: { moulue: 2, tupo: 1 }, dev: 0 },
+      res: '褒斜谷的栈道你一步步量过去，哪里驼队要歇、哪里伏兵能藏，都记进心里。脚底的泡，是地图上的墨。' },
 
     /* ---- 章 3：三秦 ---- */
     { id: 'HX-ACT-25', name: '安抚关中', desc: '约法安民（财富-3）', req: { caifu: 3 }, chapters: [3, 3],
-      eff: { attrs: { caifu: -3, shengwang: 4, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 3, weiji: -1, zhengji: 1 }, dev: 0 },
       res: '约法三章，秋毫无犯，市不易肆。关中父老说：汉军不扰民——这四个字，比十万兵值钱。' },
     { id: 'HX-ACT-26', name: '整肃军纪', desc: '申军法于三军', chapters: [3, 3],
-      eff: { attrs: { quanshi: 3, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, wuli: 1 }, dev: 0 },
       res: '斩了两个劫掠的卒子，首级悬辕三日，全军肃然。慈不掌兵——你懂，士卒也懂了。' },
     { id: 'HX-ACT-27', name: '绘图勘道', desc: '踏勘秦岭诸道（才学≥50 方能成图）', req: { caixue: 50 }, chapters: [3, 3],
-      eff: { attrs: { caixue: 3, moulue: 2, tupo: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 1, tupo: -2 }, dev: 0 },
       res: '子午、傥骆、褒斜、陈仓，一条一条踩过去。每条道的宽窄险易，都进了你的图，也进了你的命。' },
     { id: 'HX-ACT-28', name: '犒赏士卒', desc: '以私财犒军（财富-4）', req: { caifu: 4 }, chapters: [3, 3],
-      eff: { attrs: { caifu: -4, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -4, shengwang: 2 }, dev: 0 },
       res: '酒肉到营，臂膀攒动，士气大振。士兵记得韩将军的赏——赏在明处，恩在心里。' },
     { id: 'HX-ACT-29', name: '速修栈道', desc: '督办栈道之役', chapters: [3, 3],
-      eff: { attrs: { caifu: 3, quanshi: 3 }, dev: 0 },
+      eff: { attrs: { caifu: 2, quanshi: 2 }, dev: 0 },
       res: '栈道日日有新进展——关中的探子日日有回报。你要的就是他们看。' },
     { id: 'HX-ACT-30', name: '收留降卒', desc: '收编三秦降兵', chapters: [3, 3],
-      eff: { attrs: { quanshi: 4, weiji: 3 }, dev: 0 },
+      eff: { attrs: { quanshi: 3, weiji: 3 }, dev: 0 },
       res: '降卒感不杀之恩，歃血为誓，愿效死力。你的军队又厚了一层——厚的不是人，是人心。' },
+    { id: 'HX-ACT-57', name: '简阅新附', desc: '点验降卒，汰弱留强', chapters: [3, 3],
+      eff: { attrs: { quanshi: 2, weiji: 1 }, dev: 0 },
+      res: '降卒在校场列队三日，老弱者归农，精壮者补伍。点验完的册子薄了三成，留下的队伍却沉了三成。' },
+    { id: 'HX-ACT-58', name: '履险巡塞', desc: '亲巡关塞，度险设防', chapters: [3, 3],
+      eff: { attrs: { moulue: 2, tupo: 1 }, dev: 0 },
+      res: '函谷、武关、临晋，你一处一处走过，把每座关的虚实都看过一遍。随行的亲兵累得叫苦——用兵的人，先得用脚把地形读一遍。' },
 
     /* ---- 章 4：赵齐 ---- */
     { id: 'HX-ACT-31', name: '犒赏伤兵', desc: '厚恤伤亡（财富-4）', req: { caifu: 4 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -4, shengwang: 3, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caifu: -4, shengwang: 2, weiji: -1 }, dev: 0 },
       res: '伤者得恤，死者得葬，名单你亲自过目。三军知将军不弃人——不弃人的将军，人才肯替他死。' },
     { id: 'HX-ACT-32', name: '研读地志', desc: '读燕赵齐地志', chapters: [4, 4],
-      eff: { attrs: { caixue: 3, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 1 }, dev: 0 },
       res: '地志读了三遍，山川关隘、城郭粮道，都在你脑中展开成图。图在心里，比在案上可靠。' },
     { id: 'HX-ACT-33', name: '释放俘卒', desc: '释俘遣归，以收人心', chapters: [4, 4],
-      eff: { attrs: { shengwang: 3, weiji: -2 }, dev: 0 },
+      eff: { attrs: { shengwang: 2, weiji: -1 }, dev: 0 },
       res: '俘卒发给干粮，跪地号哭而去。燕赵之地传你的名——杀出来的名快，放出来的名远。' },
     { id: 'HX-ACT-34', name: '修筑壁垒', desc: '筑垒固防，深根固本', chapters: [4, 4],
-      eff: { attrs: { quanshi: 3, wuli: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, wuli: 1, tupo: -1 }, dev: 0 },
       res: '壁垒连成一线，壕深垒高。守得住的胜利，才是胜利——这话你对诸将说了三遍。' },
     { id: 'HX-ACT-35', name: '问策降将', desc: '虚心问计于降者（声望≥40 降者方肯尽言）', req: { shengwang: 40 }, chapters: [4, 4],
-      eff: { attrs: { caixue: 3, junxin: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, junxin: 1, moulue: 1 }, dev: 0 },
       res: '你执礼甚恭，降将知无不言，言无不尽。敌人的地图，从此也是你的地图。' },
     { id: 'HX-ACT-36', name: '巡行齐市', desc: '察齐地民情', chapters: [4, 4],
-      eff: { attrs: { shengwang: 2, caifu: 3, wuli: 2 }, dev: 0 },
+      eff: { attrs: { shengwang: 1, caifu: 2, wuli: 1 }, dev: 0 },
       res: '临淄的富庶让你心惊：车毂击，人肩摩。这一块地，养得起一支王师——也养得起别的。' },
+    { id: 'HX-ACT-59', name: '镇抚赵地', desc: '安集残破，复其生业', chapters: [4, 4],
+      eff: { attrs: { zhengji: 2, shengwang: 1 }, dev: 0 },
+      res: '赵地新破，你下令归田者复其籍、缴械者不问罪。三月之间，逃亡的编户渐渐回来——打下来的地，要养得住，才算你的。' },
+    { id: 'HX-ACT-60', name: '抚创问疾', desc: '亲巡伤营，亲为裹创（财富-1）', req: { caifu: 1 }, chapters: [4, 4],
+      eff: { attrs: { shengwang: 2, caifu: -1 }, dev: 0 },
+      res: '伤营里你一个一个看过去，药不够，你把自己的随军金帛贴了进去。伤卒挣扎着要起身行礼，你按住了他。' },
 
     /* ---- 章 5：齐王 ---- */
     { id: 'HX-ACT-37', name: '缮甲积谷', desc: '缮治甲兵，积储粮谷', chapters: [5, 5],
-      eff: { attrs: { quanshi: 4, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 3, weiji: 2, wuli: 1 }, dev: 0 },
       res: '武库新甲三千领，仓谷支三年。临淄城头的旗换了新的——旗是齐旗，心是你的心。' },
     { id: 'HX-ACT-38', name: '延揽齐士', desc: '礼贤下士（财富-3）', req: { caifu: 3 }, chapters: [5, 5],
-      eff: { attrs: { caifu: -3, shengwang: 3, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2, biancai: 1 }, dev: 0 },
       res: '齐之辩士说客，揣着各样心思，渐集于你的门下。蒯通，也是其中之一——最有耐心的一个。' },
     { id: 'HX-ACT-39', name: '减免齐赋', desc: '轻徭薄赋，以固齐本（财富-5）', req: { caifu: 5 }, chapters: [5, 5],
-      eff: { attrs: { caifu: -5, shengwang: 4 }, dev: 0 },
+      eff: { attrs: { caifu: -5, shengwang: 3, zhengji: 2 }, dev: 0 },
       res: '赋减三成，齐人讴歌于野。根基这东西，是拿真金白银换的——换得来，也守得住，才算数。' },
     { id: 'HX-ACT-40', name: '密探汉廷', desc: '遣人觇长安动静', chapters: [5, 5],
-      eff: { attrs: { caixue: 3, weiji: 2, moulue: 2 }, zg: 3, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: 2, moulue: 1 }, zg: 3, dev: 0 },
       res: '长安的每一份动静，你都听了三遍。听得多了，汉廷也听见了你——听，从来都是相互的。' },
     { id: 'HX-ACT-41', name: '整训齐军', desc: '大阅齐兵，申严军令', chapters: [5, 5],
-      eff: { attrs: { quanshi: 3, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, wuli: 1 }, dev: 0 },
       res: '齐军新成，行止有度。这支军队听谁的号令，你心里有数。' },
     { id: 'HX-ACT-42', name: '报聘诸侯', desc: '遣使通好于诸侯', chapters: [5, 5],
-      eff: { attrs: { junxin: 2, shengwang: 3, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 1, shengwang: 2, biancai: 1 }, dev: 0 },
       res: '燕赵来的回使言辞恭敬，礼物厚重。天下的棋盘，比你想的大——子也不止两色。' },
+    { id: 'HX-ACT-61', name: '缮治临淄', desc: '修城浚池，固齐之根本（财富-1）', req: { caifu: 1 }, chapters: [5, 5],
+      eff: { attrs: { quanshi: 2, caifu: -1 }, dev: 0 },
+      res: '临淄的城垣补了三段，护城河又掘深了一尺。工匠问王上何故急此，你望着城墙没有答——有些墙，是砌给长安看的。' },
+    { id: 'HX-ACT-62', name: '问俗于野', desc: '微行乡野，问齐民疾苦', chapters: [5, 5],
+      eff: { attrs: { moulue: 2, shengwang: 1 }, dev: 0 },
+      res: '你换了一身布衣下乡，看田里的禾、听灶边的话。回宫时鞋上全是泥——治一国与带一军，先要懂的都是人。' },
 
     /* ---- 章 6：楚与长安 ---- */
     { id: 'HX-ACT-43', name: '散财恤旧', desc: '厚恤故旧乡邻（财富-4）', req: { caifu: 4 }, chapters: [6, 6],
-      eff: { attrs: { caifu: -4, shengwang: 3, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caifu: -4, shengwang: 2, weiji: -1 }, dev: 0 },
       res: '故旧乡邻，户户有赠。下邳人都说：韩楚王，不忘本——本是什么，你比谁都清楚。' },
     { id: 'HX-ACT-44', name: '闭门读律', desc: '研读汉律，如履薄冰', chapters: [6, 6],
-      eff: { attrs: { caixue: 3, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: -1 }, dev: 0 },
       res: '律令读得越细，你越明白哪条线不能碰——以及，碰了会怎样。明白得有点晚，但总比不明白强。' },
     { id: 'HX-ACT-45', name: '结交近侍', desc: '厚结宫中左右（财富-4）', req: { caifu: 4 }, chapters: [6, 6],
-      eff: { attrs: { caifu: -4, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -4, junxin: 1, biancai: 1 }, dev: 0 },
       res: '中黄门收你的礼，小黄门递你的话。宫里的风吹草动，总比别人早半日到你案头。' },
     { id: 'HX-ACT-46', name: '巡视楚地', desc: '巡行楚境，绥抚其民', chapters: [6, 6],
-      eff: { attrs: { quanshi: 2, shengwang: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 1, shengwang: 1, wuli: 1 }, dev: 0 },
       res: '楚人见故将军，箪食壶浆，迎出十里。你按住心动，只谈农桑——有些情，领了就是罪。' },
     { id: 'HX-ACT-47', name: '上书自陈', desc: '以书剖白，自明心迹', chapters: [6, 6],
-      eff: { attrs: { junxin: 3, weiji: 2, caixue: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, weiji: 2, caixue: 1 }, dev: 0 },
       res: '剖白的书递上去了，字斟句酌，改了七遍。有没有用，你不敢想。' },
     { id: 'HX-ACT-48', name: '深居简出', desc: '杜门谢客，示无他志', chapters: [6, 6],
-      eff: { attrs: { weiji: -4, shengwang: -2, tupo: 2 }, dev: 0 },
-      res: '府门三日不出，谢客的帖子积了一摞。长安的眼睛找不到焦点，渐渐散了——散到别处去了，还是散在暗处，你说不准。' }
+      eff: { attrs: { weiji: -3, shengwang: -2, tupo: 1 }, dev: 0 },
+      res: '府门三日不出，谢客的帖子积了一摞。长安的眼睛找不到焦点，渐渐散了——散到别处去了，还是散在暗处，你说不准。' },
+    { id: 'HX-ACT-63', name: '奉朝如仪', desc: '朝请不阙，以示臣节', chapters: [6, 6],
+      eff: { attrs: { junxin: 2, weiji: -1 }, dev: 0 },
+      res: '每次朝会你都到，站位不前不后，奏对不多一字。同列的列侯渐渐习惯了你的安静——安静，是长安城里最贵的护身符。' },
+    { id: 'HX-ACT-64', name: '楚邸课射', desc: '府中习射，筋骨不废', chapters: [6, 6],
+      eff: { attrs: { wuli: 2, tupo: 1 }, dev: 0 },
+      res: '后园立了箭垛，你每日射满一壶。门客说王上何必亲此小技，你收弓不语——剑不能锈，人更不能。' }
   ];
 
   /* ============ 历史百科词条 ============ */
@@ -935,11 +991,17 @@
   };
   // 失宠规则归汉拜将后方生效
   var PERSIST = { junxinFrom: 2 };
+  // 年龄与疾病（v1.8，接入自李斯/荆轲本）：AGE 定初登场年龄，各章 age 章首定龄——韩信全线低于 55，
+  // 不触发衰减档（有意为之：本线体现"疾病仍可因低体魄发生"）；ILLNESS 开启疾病线，体魄归零走 death 病亡（E8/baobing 病殁侯邸）。
+  var AGE = { init: 20 };
+  var ILLNESS = { cost: 3, heal: 5, onsetTupo: 5, onsetWeiji: 3, drainTupo: 2, drainWeiji: 2, death: { ending: 'E8', variant: 'baobing' } };
+  // 行动卡规则（卡牌 v2）：diminish=false 关闭行动收益递减——本剧本卡池已按无递减重新平衡。
+  var ACTION_RULES = { diminish: false };
   // 功业标记分值（韩信剧本：登坛、战役、王爵）
   var MERIT_MAP = { '汉中': 8, '三秦': 10, '破魏': 10, '破赵': 15, '破齐': 15, '齐王': 20, '垓下': 15 };
 
   return {
-    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, DIFFICULTY: DIFFICULTY,
+    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, AGE: AGE, ILLNESS: ILLNESS, ACTION_RULES: ACTION_RULES, DIFFICULTY: DIFFICULTY,
     SCENARIO: SCENARIO, HIDDEN: HIDDEN, PERSIST: PERSIST, MERIT_MAP: MERIT_MAP,
     DEV_BANDS: DEV_BANDS, ENDINGS: ENDINGS, CHAPTERS: CHAPTERS,
     CORRECTIONS: CORRECTIONS, ACHIEVEMENTS: ACHIEVEMENTS, KEY_NODE_NAMES: KEY_NODE_NAMES,

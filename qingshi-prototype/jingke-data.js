@@ -94,7 +94,9 @@
         yishui: { name: '易水截杀',
           zhuan: '太史公曰：轲未渡易水，秦谍夜发，围于野寺。剑出匣而围合，力竭被擒，槛车西去，无复歌者。秦之耳目，先燕之白衣三日矣。' },
         yaonang: { name: '药囊之厄',
-          zhuan: '太史公曰：轲逐王不及，御医夏无且以药囊掷之，轲一挫之间，王剑已及。微此一击，秦政其殆乎！或曰天命，或曰人事——轲死而笑骂不绝，亦人杰矣。' }
+          zhuan: '太史公曰：轲逐王不及，御医夏无且以药囊掷之，轲一挫之间，王剑已及。微此一击，秦政其殆乎！或曰天命，或曰人事——轲死而笑骂不绝，亦人杰矣。' },
+        baobing: { name: '病殁客舍',
+          zhuan: '太史公曰：轲既许燕丹，函首与图俱备，行有日矣。客舍夜半，轲忽染沉疴，寒热交作，药石不进，数日而殁于易水之西。太子丹素服往哭，刺秦之议遂寝。后五年，秦兵拔蓟，燕王喜亡走辽东——终无一人提匕首入咸阳者。易水依旧寒，不送白衣，送一棺。' }
       }
     }
   };
@@ -110,11 +112,12 @@
   var CHAPTERS = [
     /* ---------- 序章 ---------- */
     {
-      id: 'c0', title: '序章 ｜ 剑与棋', sub: '教学章 · 卫—榆次—邯郸',
+      id: 'c0', title: '序章 ｜ 剑与棋', sub: '教学章 · 卫—榆次—邯郸', age: 30,
       summaryNotes: [
         '【教学】上方十一维是你的命数。危机涨满之日，便是秦狱吏登门之时。',
         '【教学】偏离度记你与史实的距离，只增不减：≤20 循史，21–45 微澜，46–70 改流，71 以上逆天。',
-        '【教学】选项旁带"史"字者，是史书所载荆轲的本来面目。循之则稳，违之则波澜自生。'
+        '【教学】选项旁带"史"字者，是史书所载荆轲的本来面目。循之则稳，违之则波澜自生。',
+        '【教学】岁月催人——体魄随年齿衰减。体魄低则易病：小病静养两轮自愈，大病须用「求医问药」。病至膏肓，体魄归零，便是殁时。'
       ],
       intro: [
         '战国之末，七雄只剩一口气。秦在东边磨刀，六国在西边发抖，游侠儿负剑来去，不问归期。',
@@ -155,7 +158,7 @@
     },
     /* ---------- 第一章 ---------- */
     {
-      id: 'c1', title: '第一章 ｜ 燕市击筑', sub: '约前 232 前后',
+      id: 'c1', title: '第一章 ｜ 燕市击筑', sub: '约前 232 前后', age: 31,
       summaryNotes: [
         '田光记住了你。一个老人的眼睛，有时候就是一扇门。',
         '这一年，太子丹自秦亡归。燕国的天，要变了。'
@@ -196,7 +199,7 @@
     },
     /* ---------- 第二章 ---------- */
     {
-      id: 'c2', title: '第二章 ｜ 田光之荐', sub: '前 228 · 历史节点预备',
+      id: 'c2', title: '第二章 ｜ 田光之荐', sub: '前 228 · 历史节点预备', age: 34,
       summaryNotes: [
         '田光死了。他用一条命，把你推上了这条没有回头的路。',
         '太子的局已经布开：首级、地图、匕首、副手——以及，一个回不来的人。'
@@ -221,7 +224,7 @@
                  '太子丹避席顿首，声色俱下：“丹之私计，劫秦王，使悉反诸侯侵地，如⟦曹沫⟧之于齐桓公；不可，因而刺之。”',
                  '“此丹之上愿，而委于君。”他说完，伏地不起。殿上的人都看着你，烛花爆了一声。'],
           options: [
-            { t: '许之', hist: true, res: '你听见自己说：诺。一个字落地，殿外的风就起了——易水的风。太子丹顿首再拜，你没有躲这一拜。受了他的头，就还他一条路。', eff: { attrs: { junxin: 10, quanshi: 3 }, dev: 0, flags: ['caomozhi'], merit: '燕使' }, to: '2-3' },
+            { t: '许之', hist: true, res: '你听见自己说：诺。一个字落地，殿外的风就起了——易水的风。太子丹顿首再拜，你没有躲这一拜。受了他的头，就还他一条路。', eff: { attrs: { junxin: 10, quanshi: 3, zhengji: 5 }, dev: 0, flags: ['caomozhi'], merit: '燕使' }, to: '2-3' },
               { t: '固辞', req: { notflag: 'guci' }, res: '你长跪力辞：此国之大事，驽马不堪。太子丹顿首固请，不肯起身，额头碰在砖上，一声，又一声。', eff: { attrs: { junxin: -8 }, dev: 3, flags: ['guci'] }, to: '2-2' },
               /* 二连固辞（GDD 8 章 2-2 设计备注）：太子再请仍辞，方为死志。
                * v1.6.8 P1-4 修复——原写作 to:[{if:{flag:'guci'},…E2},{to:'2-2'}]，
@@ -250,7 +253,7 @@
     },
     /* ---------- 第三章 节点N1 ---------- */
     {
-      id: 'c3', title: '第三章 ｜ 樊於期之首', sub: '前 228 · 历史节点',
+      id: 'c3', title: '第三章 ｜ 樊於期之首', sub: '前 228 · 历史节点', age: 35,
       summaryNotes: [
         '函首与地图备齐了。从这一刻起，你不只是一个说客或刺客——你是一件礼物。',
         '徐夫人的匕首只有七寸。七寸之外，是你和秦王之间最后的距离。'
@@ -275,7 +278,7 @@
                  '你去见他。院里的雪没人扫，他的剑扔在廊下，锈了。',
                  '要开口借一样东西——他的头颅。这三个字在舌尖上，比匕首还沉。'],
           options: [
-            { t: '陈说利害，借首级以见秦王', hist: true, res: '樊於期偏袒扼腕而进：“此臣日夜切齿腐心也！”遂自刎。血溅上你的衣角，是烫的。你捧着函首，手没有抖——从今夜起，你没有资格抖。', eff: { attrs: { shengwang: -8, weiji: 5, biancai: 3 }, dev: 0, flags: ['fanshou'], hist: -10, ach: 'fanshou',
+            { t: '陈说利害，借首级以见秦王', hist: true, res: '樊於期偏袒扼腕而进：“此臣日夜切齿腐心也！”遂自刎。血溅上你的衣角，是烫的。你捧着函首，手没有抖——从今夜起，你没有资格抖。', eff: { attrs: { shengwang: -8, weiji: 5, biancai: 3, zhengji: 5 }, dev: 0, flags: ['fanshou'], hist: -10, ach: 'fanshou',
               condAttrs: [ { if: { flag: 'fenglai' }, attrs: { shengwang: 8 }, note: '他先一步来赴死' } ] }, to: '3-2' },
             { t: '不忍，另谋他途', res: '你出来了，雪落在肩上，没有声音。院门在身后合上，隔开一个活人的世界。换个办法，总归还有——你这样告诉自己。', eff: { attrs: { weiji: -3 }, dev: 10 }, to: '3-1b' },
             { t: '劝太子丹亲杀之', res: '太子丹默然良久：“樊将军穷困来归，丹不忍。”他说这话时眼睛红了。球又滚回你脚下——你不忍，他不忍，谁忍？', eff: { attrs: { junxin: -5, shengwang: -3, weiji: 3 }, dev: 3 }, to: '3-1' }
@@ -285,7 +288,7 @@
                  '牢里有新死的死囚，面目粗看，倒有三分像。狱吏收了钱，什么都没看见。',
                  '灯下比对画像，你忽然觉得可笑：万家的封邑，竟要由一颗无名的人头去换。'],
           options: [
-            { t: '以假首充数', req: { caixue: 55 }, res: '药水浸过，须发改过，匣中之首，真假莫辨。但你自己知道——露馅就是死。你把匣子合上，封泥按得很慢，很平。', eff: { attrs: { weiji: 5, moulue: 2 }, dev: 8, flags: ['jiashou'] }, to: '3-2' },
+            { t: '以假首充数', req: { moulue: 40 }, res: '药水浸过，须发改过，匣中之首，真假莫辨。但你自己知道——露馅就是死。你把匣子合上，封泥按得很慢，很平。', eff: { attrs: { weiji: 5, moulue: 2 }, dev: 8, flags: ['jiashou'] }, to: '3-2' },
             { t: '无首也要行', res: '太子丹眉头拧成了结，但事已至此。无首之局，说辞要重新织，路要重新踩。你把空匣撤下，换上一卷更重的地图。', eff: { attrs: { junxin: -5, weiji: 5 }, dev: 5, flags: ['wushou'] }, to: '3-2' }
           ] },
         { id: '3-2', title: '督亢之图',
@@ -294,7 +297,7 @@
                  '这就是敲门砖——敲开的门后是什么，你不想也知道。'],
           options: [
             { t: '取真图入秦', hist: true, res: '图是真的，燕国的命门也是真的。你把它卷好，系紧，动作很稳。交出这块地，换进门那一步——账是这么算的。', eff: { dev: 0, flags: ['dktu'] }, to: '3-3' },
-            { t: '以假图代之', req: { caixue: 55 }, res: '山川易位，城郭挪形。假图画了三夜，笔笔都像真的。看不出来——直到展开的最后一刻。而那一刻，已经没有回头路。', eff: { attrs: { weiji: 3, moulue: 2 }, dev: 8, flags: ['jiatu'] }, to: '3-3' },
+            { t: '以假图代之', req: { moulue: 40 }, res: '山川易位，城郭挪形。假图画了三夜，笔笔都像真的。看不出来——直到展开的最后一刻。而那一刻，已经没有回头路。', eff: { attrs: { weiji: 3, moulue: 2 }, dev: 8, flags: ['jiatu'] }, to: '3-3' },
             { t: '不带图，空手行', res: '没有图，秦王凭什么见你？你想的是另一套说辞——空手上殿，全靠一张嘴。太子丹看着你，像看一个疯子。', eff: { attrs: { junxin: -3, weiji: 5 }, dev: 5 }, to: '3-3' }
           ] },
         { id: '3-3', title: '徐夫人匕',
@@ -318,7 +321,7 @@
     },
     /* ---------- 第四章 节点N2 ---------- */
     {
-      id: 'c4', title: '第四章 ｜ 易水', sub: '前 227 · 历史节点',
+      id: 'c4', title: '第四章 ｜ 易水', sub: '前 227 · 历史节点', age: 36,
       summaryNotes: [
         '白衣、筑声、易水。从这一刻起，你的名字不再只属于你。',
         '函谷关在身后合拢。前面的路，史书上只用六个字就写完了——而你要一步一步走。'
@@ -350,7 +353,7 @@
                  '墙头跃下七条黑影。秦人的刀，比你想象的快，也比你想到的先到。',
                  '他们知道图，也知道匕首。你抱紧行囊：有人出卖了这条路上的一块石头。'],
           options: [
-            { t: '杀出重围', req: { caixue: 55 }, res: '剑光起落，寺门洞开。你提着滴血的剑上路，身后没有活口——只有风，把血腥味送出三里地。', eff: { attrs: { weiji: 10, wuli: 3, tupo: -2 }, dev: 5 }, to: '4-2' },
+            { t: '杀出重围', req: { wuli: 55 }, res: '剑光起落，寺门洞开。你提着滴血的剑上路，身后没有活口——只有风，把血腥味送出三里地。', eff: { attrs: { weiji: 10, wuli: 3, tupo: -2 }, dev: 5 }, to: '4-2' },
             { t: '绕道潜行', req: { caifu: 8 }, res: '重金买通向导，昼伏夜行。刀躲开了，风声没躲开——从此你睡觉都留着半只耳朵。', eff: { attrs: { caifu: -8, weiji: -5, tupo: -2 }, dev: 3 }, to: '4-2' },
             { t: '力竭被擒', res: '剑脱手的那一刻，你想起易水的歌。原来那句"不复还"，是唱给今天听的。', eff: { dev: 0 }, to: { ending: 'E8', variant: 'yishui' } }
           ] },
@@ -366,7 +369,7 @@
     },
     /* ---------- 第五章 节点N3 ---------- */
     {
-      id: 'c5', title: '第五章 ｜ 咸阳宫', sub: '前 227 · 历史节点 · 全剧本枢纽',
+      id: 'c5', title: '第五章 ｜ 咸阳宫', sub: '前 227 · 历史节点 · 全剧本枢纽', age: 36,
       summaryNotes: [
         '史书行到此处，只剩最后一页。这一页写杀、写劫、写退——还是写死，由你落笔。'
       ],
@@ -402,7 +405,7 @@
                  '你不能回头。身后这个人，正把整座局往悬崖边上推。'],
           options: [
             { t: '笑而谢曰：“北蛮鄙人，故振慑。”', hist: true, res: '“北蛮夷之鄙人，未尝见天子，故振慑。”你笑得轻松，语气像说一件趣事。秦王信了八分——剩下两分，悬在你后颈。', eff: { attrs: { biancai: 3 }, dev: 0, zg: -10 },
-              to: [ { if: { caixue: 50 }, to: '5-4' }, { to: { ending: 'E8', variant: 'shangdian' } } ] },
+              to: [ { if: { biancai: 40 }, to: '5-4' }, { to: { ending: 'E8', variant: 'shangdian' } } ] },
             { t: '亲自捧图进', req: { shengwang: 55 }, res: '“小臣捧图，不敢假手。”你接过图匣，把舞阳挡在身后。匣比刚才沉了十倍——里面装的是两个人的命。', eff: { dev: 5, zg: 5 }, to: '5-4' },
             { t: '令舞阳退下', res: '“鄙人愚劣，使其退。”舞阳退下了，殿上只剩你一人。也好——一个人的局，一个人收。', eff: { attrs: { weiji: 10 }, dev: 5, zg: 15 }, to: '5-4' }
           ] },
@@ -414,8 +417,8 @@
           options: [
             { t: '揕其胸——杀！', hist: true, res: '左手把其袖，右手揕其胸——七寸匕光，直取那颗心跳。六国的怒气，都灌在这一刺里。', eff: { attrs: { weiji: 30 }, dev: 40, merit: '刺秦' },
               to: [
-                { if: { flag: 'jianli-tong', caixue: 70, zgMax: 64 }, to: { ending: 'E7' } },
-                { if: { flag: 'xubi', caixue: 65, zgMax: 49 }, to: { ending: 'E6' } },
+                { if: { flag: 'jianli-tong', biancai: 60, zgMax: 64 }, to: { ending: 'E7' } },
+                { if: { flag: 'xubi', biancai: 55, zgMax: 49 }, to: { ending: 'E6' } },
                 { if: { flag: 'jianli-tong', zgMax: 64 }, to: { ending: 'E6' } },
                 { to: '5-5' }
               ] },
@@ -429,7 +432,7 @@
               to: [ { if: { zgMax: 34 }, to: { ending: 'E5' } }, { to: { ending: 'E8', variant: 'yaonang' } } ] },
             { t: '与渐离并起', req: { flag: 'jianli-tong' }, res: '筑声炸响，铜柱嗡鸣。渐离扑向左侧卫士，你扑向王座——易水边的歌，唱到了咸阳宫的梁上。', eff: { attrs: { weiji: 30 }, dev: 40, merit: '刺秦' },
               to: [
-                { if: { caixue: 70, zgMax: 64 }, to: { ending: 'E7' } },
+                { if: { biancai: 60, zgMax: 64 }, to: { ending: 'E7' } },
                 { if: { zgMax: 64 }, to: { ending: 'E6' } },
                 { to: '5-5' }
               ] }
@@ -440,7 +443,7 @@
                  '王负剑！王负剑！殿下的呼喊声炸开。长剑出鞘的声音，从柱子后面传来。'],
           options: [
             { t: '再逐', res: '你的剑划过王的臂膀，血溅丹墀——然后卫士的剑也到了。可惜，就差一寸。', eff: { dev: 0, hist: 15, ach: 'yaonang' },
-              to: [ { if: { caixue: 60 }, to: { ending: 'E1', variant: 'shangqin' } }, { to: { ending: 'E8', variant: 'yaonang' } } ] },
+              to: [ { if: { biancai: 45 }, to: { ending: 'E1', variant: 'shangqin' } }, { to: { ending: 'E8', variant: 'yaonang' } } ] },
             { t: '倚柱而笑，箕踞而骂', hist: true, res: '“事所以不成者，乃欲以生劫之，必得约契以报太子也！”你倚柱而笑，箕踞而骂。左右既前，斩荆轲——笑声先他们一步，上了梁。', eff: { dev: 0, hist: 30, ach: 'yaonang' }, to: { ending: 'E1' } },
             { t: '掷匕击之', res: '匕首脱手，钉入铜柱，火星四溅——这是你最后的一击。铜柱嗡嗡地响，像一声没有唱完的歌。', eff: { dev: 0, hist: 10 }, to: { ending: 'E1', variant: 'tongzhu' } }
           ] }
@@ -655,154 +658,201 @@
              '你还有最后一次挣扎的机会。'],
       options: [
         { t: '散尽家财，买命脱身', req: { caifu: 30 }, res: '万金散去，追兵的方向"恰好"错了一夜。天亮之前，你已经换了三家客栈。', eff: { attrs: { caifu: -30, weiji: -25 }, dev: 0 }, to: 'RETURN' },
-        { t: '以辩脱罪', req: { caixue: 60 }, res: '你自缚请见，一席话说得缇骑收刀回禀。刀还在，麻烦也还在——只是都暂时挂在了别人腰间。', eff: { attrs: { weiji: -15, junxin: -5 }, dev: 0 }, to: 'RETURN' },
+        { t: '以辩脱罪', req: { biancai: 50 }, res: '你自缚请见，一席话说得缇骑收刀回禀。刀还在，麻烦也还在——只是都暂时挂在了别人腰间。', eff: { attrs: { weiji: -15, junxin: -5 }, dev: 0 }, to: 'RETURN' },
         { t: '坐以待毙', res: '你搁下匕首，整衣危坐。门外的脚步声越来越近，你给自己斟了最后一碗酒。', eff: { attrs: { weiji: 15 }, dev: 0 }, to: 'RETURN' }
       ] }
   };
 
-  /* ============ 主动行动（行动卡回合制；通用 6 + 章定制 6，每章池恒 12，共 42） ============
+  /* ============ 主动行动（行动卡回合制；通用 8 + 章定制 8，每章池恒 16，共 56） ============
    * 数值口径：单项 ≤±8、zg ≤±5、不写 flags/hist/merit、dev 恒 0（同李斯本附录 C 规范）。
+   * v2 卡牌改版（接入自李斯本）：收益全面缩窄（非危机正收益 5→3/4→3/3→2/2→1，
+   * 危机负收益 -8→-5/-6→-4/-5→-3/-4→-3/-3→-2/-2→-1；财富支付、危机正值、属性负值等代价项不动），
+   * 通用池补 2 张体质卡（JK-ACT-43/44），各章专属补 2 张（JK-ACT-45~56）；ACTION_RULES.diminish=false。
+   * 政绩经济：卡侧 JK-ACT-22/49/51（+1/+2/+2），事件 hist 2-2 许之 +5、3-1 陈说利害 +5（见 CHAPTERS）。
    * chapters:[起,止]：0 卫赵 / 1 燕市 / 2 田光 / 3 首图 / 4 易水 / 5 咸阳。 */
   var ACTIONS = [
     /* ---- 通用行动（全章可用） ---- */
     { id: 'JK-ACT-1', name: '著书立说', desc: '闭门著文，以文养名', chapters: [0, 5],
-      eff: { attrs: { caixue: 4, shengwang: 2, weiji: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 3, shengwang: 1, weiji: 2 }, dev: 0 },
       res: '数月之功，文成一卷。士林传抄，也有人抄给了不想让你出名的人——名是出去了，眼睛也跟着进来了。' },
     { id: 'JK-ACT-2', name: '置酒高会', desc: '置酒结客（财富-8）', req: { caifu: 8 }, chapters: [0, 5],
-      eff: { attrs: { caifu: -8, shengwang: 4, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -8, shengwang: 3, junxin: 1, biancai: 1 }, dev: 0 },
       res: '一场大宴，宾主尽欢。散场时，多了几个肯替你说话的人——酒钱是肉疼的，人情是值的。' },
     { id: 'JK-ACT-3', name: '太子府问安', desc: '趋府问安，固宠于上（需入燕）', req: { minChapter: 1 }, chapters: [0, 5],
-      eff: { attrs: { junxin: 5, weiji: 2, biancai: 2, shengwang: -1 }, dev: 0 },
+      eff: { attrs: { junxin: 3, weiji: 2, biancai: 1, shengwang: -1 }, dev: 0 },
       res: '你在阶下站了两个时辰，换来三句问话。值。门客们说你谄，你说他们酸——东宫的门路，本就是一阶一阶站出来的。' },
     { id: 'JK-ACT-4', name: '读书击剑', desc: '白日读书，灯下击剑', chapters: [0, 5],
-      eff: { attrs: { caixue: 3, wuli: 2, tupo: -1, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, wuli: 1, tupo: -1, weiji: -1 }, dev: 0 },
       res: '书读进去了，剑也顺了。乱世里难得的整时辰，烛花爆了两回，你都舍不得剪。' },
     { id: 'JK-ACT-5', name: '散财结客', desc: '厚币招贤（财富-8）', req: { caifu: 8 }, chapters: [0, 5],
-      eff: { attrs: { caifu: -8, weiji: -6, shengwang: 3, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -8, weiji: -4, shengwang: 2, biancai: 1 }, dev: 0 },
       res: '千金散尽，门下多了几十张嘴，也多了几十双替你看路的眼睛。钱财是流水，人心是堤坝。' },
     { id: 'JK-ACT-6', name: '称病闭户', desc: '闭门称病，避人锋芒（需入局）', req: { minChapter: 2 }, chapters: [0, 5],
-      eff: { attrs: { weiji: -8, quanshi: -3, junxin: -2, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -5, quanshi: -3, junxin: -2, tupo: 1 }, dev: 0 },
       res: '病假话递出去，馆驿门前清净了几日。探病的人来了几拨，真心难辨——谁先来、谁后到，你都躺在榻上记下了。' },
+    /* ---- 通用行动（v2：习武养身，全章可用） ---- */
+    { id: 'JK-ACT-43', name: '习剑强身', desc: '晨起习剑，筋骨与剑俱进', chapters: [0, 5],
+      eff: { attrs: { wuli: 3, tupo: 1, caifu: -1 }, dev: 0 },
+      res: '你鸡鸣即起，庭前剑光起落三百回。汗水换了几身衣衫，臂上的力道却一日日攒了下来——剑是旧剑，使剑的人已不是从前那人。' },
+    { id: 'JK-ACT-44', name: '导引养生', desc: '调息导引，养精神于未衰', chapters: [0, 5],
+      eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
+      res: '你闭户调息，依图导引，吐纳之间气血渐顺。门外的人久不见你露面，揣测便淡了——养的是精神，顺带也养了一份清静。' },
 
     /* ---- 章 0：卫赵漫游 ---- */
     { id: 'JK-ACT-7', name: '切磋剑术', desc: '与游侠儿试剑', chapters: [0, 0],
-      eff: { attrs: { caixue: 4, wuli: 3, weiji: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 3, wuli: 2, weiji: 2 }, dev: 0 },
       res: '三场两胜。你的袖口被划破一道，他的名字被你记住一个。收剑时他拱手的手势，比出剑时诚恳。' },
     { id: 'JK-ACT-8', name: '路见不平', desc: '仗剑解人之厄（财富-3）', req: { caifu: 3 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -3, shengwang: 4, wuli: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 3, wuli: 1 }, dev: 0 },
       res: '泼皮散了，老翁要给你磕头。这事当天传遍半座榆次城——侠名这东西，一半是打出来的，一半是说出来的。' },
     { id: 'JK-ACT-9', name: '贩马于市', desc: '相马贩马，以资川旅', chapters: [0, 0],
-      eff: { attrs: { caifu: 4, shengwang: -2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2 }, dev: 0 },
       res: '转手两匹驽马，囊中充裕了些。马市的人笑你：剑客也识钱？你笑笑没接话——剑客的盘缠，也是一刀一刀省出来的。' },
     { id: 'JK-ACT-10', name: '棋摊观弈', desc: '观棋不语，悟局中势', chapters: [0, 0],
-      eff: { attrs: { caixue: 2, moulue: 2, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 1, moulue: 1, weiji: -1 }, dev: 0 },
       res: '看了一天棋，没下一子。有人问你懂棋吗，你说：懂一点势。那人似懂非懂——天下的棋，也是这么看的。' },
     { id: 'JK-ACT-11', name: '结交博徒', desc: '折节下交，缓急有援（财富-3）', req: { caifu: 3 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -3, shengwang: 3, biancai: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2, biancai: 2 }, dev: 0 },
       res: '三教九流都认得你了。乱世里，名单就是路。散场时有人拍胸脯：荆兄有事，言语一声。' },
     { id: 'JK-ACT-12', name: '野寺借宿', desc: '野寺一宿，省资养力（财富-2）', req: { caifu: 2 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -2, weiji: -4, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -2, weiji: -3, tupo: 1 }, dev: 0 },
       res: '佛前一盏灯，身外一场雨。你在蒲团上睡到自然醒，醒来时雨停了，剑还在手边——这样的日子，过一天少一天。' },
+    { id: 'JK-ACT-45', name: '市上较艺', desc: '市上较艺，名起亦招忌', chapters: [0, 0],
+      eff: { attrs: { wuli: 2, shengwang: 1, weiji: 1 }, dev: 0 },
+      res: '你在市肆的空场上较艺演武，围观的人越聚越多。喝彩声传遍了半座城，也传进了几双不好惹的眼睛里——乡野的武名，一半是敬，一半是忌。' },
+    { id: 'JK-ACT-46', name: '风餐野宿', desc: '风餐露宿，筋骨换脚程', chapters: [0, 0],
+      eff: { attrs: { tupo: 2, caifu: 1 }, dev: 0 },
+      res: '你在野寺与檐下宿了一路，替人负米赶车，肩头的茧厚了一层，囊中的钱也多了几枚。游侠的脚程与身板，都是这么熬出来的。' },
 
     /* ---- 章 1：燕市 ---- */
     { id: 'JK-ACT-13', name: '听筑消夜', desc: '燕市听筑，且放胸怀', chapters: [1, 1],
-      eff: { attrs: { weiji: -4, tupo: 2 }, dev: 0 },
-      res: '筑声一起，满座皆醉。你听得忘了添酒，曲终人散，还在原地坐了一刻。' },
+      eff: { attrs: { weiji: -3, tupo: 1, biancai: 1 }, dev: 0 },
+      res: '筑声一起，满座皆醉。你听得忘了添酒，曲终人散，还在原地坐了一刻。有人问你曲中何意，你随口答了三句，满座又静了一回。' },
     { id: 'JK-ACT-14', name: '与屠沽饮', desc: '与狗屠辈共饮（财富-3）', req: { caifu: 3 }, chapters: [1, 1],
-      eff: { attrs: { caifu: -3, shengwang: 3, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2, biancai: 1 }, dev: 0 },
       res: '狗屠的话糙，理不糙。三碗下肚，燕市没有你不知道的事——市井的耳朵，比朝堂的更灵。' },
     { id: 'JK-ACT-15', name: '授剑糊口', desc: '教童子剑，以技易粟', chapters: [1, 1],
-      eff: { attrs: { caifu: 4, weiji: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, weiji: 2, wuli: 1 }, dev: 0 },
       res: '束脩不多，够吃半月。孩子们喊你师父，你摆摆手：不敢当。他们练剑的架势歪歪扭扭，眼睛却很亮。' },
     { id: 'JK-ACT-16', name: '探太子宫', desc: '打听东宫动静（声望≥30 才有人搭话）', req: { shengwang: 30 }, chapters: [1, 1],
-      eff: { attrs: { caixue: 2, moulue: 2, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caixue: 1, moulue: 1, weiji: -1 }, dev: 0 },
       res: '太子宫每日进出多少人、哪辆车是太子丹的，你默默记下了。记这些不为别的——乱世里，门朝哪边开都要先看清。' },
     { id: 'JK-ACT-17', name: '修书故里', desc: '寄书卫中故人', chapters: [1, 1],
-      eff: { attrs: { weiji: -3, caixue: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -2, caixue: 1 }, dev: 0 },
       res: '信走了半月，回了一行字：家中都好，勿念。你把信折好收起——一行字，比信纸还薄，却压得住乡愁。' },
     { id: 'JK-ACT-18', name: '燕市豪宴', desc: '张宴三日，扬名立万（财富-6）', req: { caifu: 6 }, chapters: [1, 1],
-      eff: { attrs: { caifu: -6, shengwang: 5, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -6, shengwang: 3, biancai: 1 }, dev: 0 },
       res: '三日流水席，燕市尽知卫客之名。也有人暗中记下了你的阔绰——名与祸，常常是一同请进门的。' },
+    { id: 'JK-ACT-47', name: '晨剑于郊', desc: '城郊练剑，剑气欺霜', chapters: [1, 1],
+      eff: { attrs: { wuli: 2, tupo: 1 }, dev: 0 },
+      res: '霜还没化，你已在城郊走完了第三路剑。早起拾粪的老农看你舞到兴处，放下粪叉看了一袋烟的工夫。' },
+    { id: 'JK-ACT-48', name: '屠沽帮佣', desc: '肉案帮佣，气力换钱', chapters: [1, 1],
+      eff: { attrs: { tupo: 2, caifu: 1 }, dev: 0 },
+      res: '你替狗屠抬了半月的肉案子，气力换来几吊钱。狗屠过意不去，多切了一斤肉送你——市井的交情，都在斤两里。' },
 
     /* ---- 章 2：易水畔 ---- */
     { id: 'JK-ACT-19', name: '谒田光墓', desc: '一爵还酹，以答知己', chapters: [2, 2],
-      eff: { attrs: { shengwang: 3, weiji: -2 }, dev: 0 },
-      res: '你浇了三次酒。风过处，坟前的草朝着秦国的方向倒伏。老人听不见，但你还是把近日的事，一五一十说了一遍。' },
+      eff: { attrs: { shengwang: 2, weiji: -1, biancai: 1 }, dev: 0 },
+      res: '你浇了三次酒。风过处，坟前的草朝着秦国的方向倒伏。老人听不见，但你还是把近日的事，一五一十说了一遍——这一席话，说得比在哪个宴席上都清楚。' },
     { id: 'JK-ACT-20', name: '周旋宾客', desc: '与太子门下宾客往来', chapters: [2, 2],
-      eff: { attrs: { junxin: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '太子宫的宾客各有心思。你记下谁可交、谁须防。宴席散后，名单在心里又过了一遍。' },
     { id: 'JK-ACT-21', name: '密探秦讯', desc: '打探秦廷消息', chapters: [2, 2],
-      eff: { attrs: { caixue: 3, moulue: 2 }, zg: 3, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 1 }, zg: 3, dev: 0 },
       res: '咸阳来的每一条消息你都听了三遍。听得多了，秦廷也听见了你——消息是双向的路，你的脚步声也在路上。' },
     { id: 'JK-ACT-22', name: '督造行装', desc: '检点行装器物（财富-3）', req: { caifu: 3 }, chapters: [2, 2],
-      eff: { attrs: { caifu: -3, weiji: -3, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, weiji: -2, moulue: 1, zhengji: 1 }, dev: 0 },
       res: '函匣、图轴、车轫、干粮，逐项过手。错漏止于此夜——临行前的错漏，出了燕国就是性命。' },
     { id: 'JK-ACT-23', name: '变卖剑饰', desc: '鬻剑上之饰以充川资', chapters: [2, 2],
-      eff: { attrs: { caifu: 5, shengwang: -2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2 }, dev: 0 },
       res: '剑饰卖尽，剑还在。懂行的人看你，像看一个落魄的人。落魄就落魄吧——剑在，人就在。' },
     { id: 'JK-ACT-24', name: '纵马易水', desc: '驰马易水之滨', chapters: [2, 2],
-      eff: { attrs: { weiji: -4, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -3, tupo: 1 }, dev: 0 },
       res: '马跑得极快，风把胸口吹得透亮。易水的水，比想象中冷。你在岸边勒马站了很久，没有人来催。' },
+    { id: 'JK-ACT-49', name: '为太子画策', desc: '入幕画策，为燕谋退路', chapters: [2, 2],
+      eff: { attrs: { zhengji: 2, moulue: 1, weiji: 2 }, dev: 0 },
+      res: '你为⟦太子丹⟧谋划辽东、代北的退路与蓟城的守备，一条条写在简上。太子看完沉默良久，说：燕国欠你一策。看得见的筹策多了，看不见的眼睛也多了。' },
+    { id: 'JK-ACT-50', name: '闭门演剑', desc: '闭门演剑，朝夕揣摩', chapters: [2, 2],
+      eff: { attrs: { wuli: 2, tupo: 1, weiji: 1 }, dev: 0 },
+      res: '你在院中反复走同一路剑，起手、转折、收势，各自拆了百遍。门客问练的什么剑，你答：防身的。剑光映在墙上，像一个说不出口的名字。' },
 
     /* ---- 章 3：首级与图 ---- */
     { id: 'JK-ACT-25', name: '抚樊旧部', desc: '安抚樊於期从亡之士', chapters: [3, 3],
-      eff: { attrs: { weiji: -4, shengwang: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -3, shengwang: 1, biancai: 1 }, dev: 0 },
       res: '那些秦人红着眼眶散了。你答应他们：仇，有人替他们记。记下仇的人，自己心里也多了一道口子。' },
     { id: 'JK-ACT-26', name: '验看函首', desc: '亲验函匣封识', chapters: [3, 3],
-      eff: { attrs: { weiji: -2 }, dev: 0 },
+      eff: { attrs: { weiji: -1 }, dev: 0 },
       res: '封识完好后你才合匣。这件事上，错一处就是死。匣盖合上的声音很轻，你听得很重。' },
     { id: 'JK-ACT-27', name: '复核地形', desc: '督亢山川默记于心（才学≥45 方能成图）', req: { caixue: 45 }, chapters: [3, 3],
-      eff: { attrs: { caixue: 3, moulue: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 1, tupo: -1 }, dev: 0 },
       res: '合上眼，督亢的城郭河渠都在你脑子里展开。哪条渠先画，哪座城后展，你比画图的吏员还熟。' },
     { id: 'JK-ACT-28', name: '试毒验匕', desc: '验淬毒之效', chapters: [3, 3],
-      eff: { attrs: { caixue: 2, weiji: 3 }, dev: 0 },
+      eff: { attrs: { caixue: 1, weiji: 3 }, dev: 0 },
       res: '血濡缕，无不立死。你把刀刃上的血擦净，沉默了很久——死物尚且如此，何况人。' },
     { id: 'JK-ACT-29', name: '贿赂少府', desc: '打点少府胥吏（财富-5）', req: { caifu: 5 }, chapters: [3, 3],
-      eff: { attrs: { caifu: -5, weiji: -4 }, dev: 0 },
+      eff: { attrs: { caifu: -5, weiji: -3 }, dev: 0 },
       res: '少府的册子上，你的名字被挪到了"不必细查"那一页。那一页的纸，比别的页都贵。' },
     { id: 'JK-ACT-30', name: '杜门谢客', desc: '闭门不见外客', chapters: [3, 3],
-      eff: { attrs: { weiji: -5, shengwang: -2, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -3, shengwang: -2, tupo: 1 }, dev: 0 },
       res: '门一关，是非就进不来了。敲门声响了三次，你没应。第四次没有再来——清净，有时候是等出来的。' },
+    { id: 'JK-ACT-51', name: '佐理使务', desc: '统筹使团庶务，事事躬亲', chapters: [3, 3],
+      eff: { attrs: { zhengji: 2, weiji: 2, moulue: 1 }, dev: 0 },
+      res: '函匣的封识、图轴的装裱、币帛的数目、车从的编排，你逐项过目，亲手登记。使团上下只知有位较真的上宾——差事办得越细，留在册上的名字就越多。' },
+    { id: 'JK-ACT-52', name: '燕邸授剑', desc: '贵邸授剑，束脩充使费', chapters: [3, 3],
+      eff: { attrs: { caifu: 3, wuli: 1 }, dev: 0 },
+      res: '燕邸的贵介子弟慕名来学剑，束脩颇为丰厚。你教得敷衍，他们学得认真——使团的用度，就这么一剑一剑教了出来。' },
 
     /* ---- 章 4：易水 ---- */
     { id: 'JK-ACT-31', name: '整束行装', desc: '最后的检点', chapters: [4, 4],
-      eff: { attrs: { weiji: -3 }, dev: 0 },
+      eff: { attrs: { weiji: -2 }, dev: 0 },
       res: '行囊不过一肩，心事却有千钧。你掂了掂，都带上。最后放进去的，是一小包燕市的土。' },
     { id: 'JK-ACT-32', name: '筑前话别', desc: '与渐离对坐', chapters: [4, 4],
-      eff: { attrs: { weiji: -3 }, dev: 0 },
-      res: '谁都没提明天。散场时他说：歌我都记着呢。你点头——记着就好，总得有人记着。' },
+      eff: { attrs: { weiji: -2, biancai: 1 }, dev: 0 },
+      res: '该交代的你都说得清清楚楚，唯独没提明天。散场时他说：歌我都记着呢。你点头——记着就好，总得有人记着。' },
     { id: 'JK-ACT-33', name: '夜渡易水', desc: '趁夜暗渡（财富-3）', req: { caifu: 3 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -3, weiji: -4, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, weiji: -3, tupo: 1 }, dev: 0 },
       res: '船家不问来路。水到中流，你回头看了一眼北岸——灯火稀稀落落，像一局没下完的棋。' },
     { id: 'JK-ACT-34', name: '焚尽书信', desc: '往来尺素尽付一炬', chapters: [4, 4],
-      eff: { attrs: { weiji: -5, shengwang: -3 }, dev: 0 },
+      eff: { attrs: { weiji: -3, shengwang: -3 }, dev: 0 },
       res: '火光里你忽然想：这些字本来都是清白，如今却要当罪证来烧。纸灰扬起又落下，你一片都没留。' },
     { id: 'JK-ACT-35', name: '饯行众客', desc: '白衣之饯（财富-4）', req: { caifu: 4 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -4, shengwang: 4 }, dev: 0 },
-      res: '来送你的人比想象的多。酒过三巡，没有人笑得出来。白衣白得晃眼，像提前下的一场雪。' },
+      eff: { attrs: { caifu: -4, shengwang: 3, biancai: 1 }, dev: 0 },
+      res: '你举爵致辞，满岸鸦雀无声。来送你的人比想象的多。酒过三巡，没有人笑得出来。白衣白得晃眼，像提前下的一场雪。' },
     { id: 'JK-ACT-36', name: '默祷田光', desc: '默念遗命，以定心神', chapters: [4, 4],
-      eff: { attrs: { weiji: -4 }, dev: 0 },
+      eff: { attrs: { weiji: -3 }, dev: 0 },
       res: '田光按剑的样子，你想了一遍，又压下去一遍。压不下去的那一遍，就让它留着——留着才有力气。' },
+    { id: 'JK-ACT-53', name: '寒水试剑', desc: '易水之滨，临行试刃', chapters: [4, 4],
+      eff: { attrs: { wuli: 2, tupo: 1 }, dev: 0 },
+      res: '你在⟦易水⟧边上把剑走完了最后三遍。水风寒得刺骨，剑意却越走越顺——过了这条水，这柄剑就不是用来试的了。' },
+    { id: 'JK-ACT-54', name: '鬻车充行', desc: '鬻车于市，充西行之用', chapters: [4, 4],
+      eff: { attrs: { caifu: 3, shengwang: -1 }, dev: 0 },
+      res: '随行的车马在市口卖了，换成金饼贴身收好。人言燕使寒酸至此——你数着金饼没有接话：西行千里，轻便比体面值钱。' },
 
     /* ---- 章 5：咸阳 ---- */
     { id: 'JK-ACT-37', name: '再贿蒙府', desc: '门路再上一层（财富-5）', req: { caifu: 5 }, chapters: [5, 5],
-      eff: { attrs: { caifu: -5, junxin: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -5, junxin: 1 }, dev: 0 },
       res: '蒙府的门房见你，腰弯得比上次更低了一寸。金子能买的不是忠诚，是腰弯的角度。' },
     { id: 'JK-ACT-38', name: '观察宫卫', desc: '记下宫城换防', chapters: [5, 5],
-      eff: { attrs: { caixue: 3, moulue: 2, weiji: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 1, weiji: 2 }, dev: 0 },
       res: '卫率几时换岗、哪道门最松，你都在心里排了一遍。排完才发现，手心全是汗。' },
     { id: 'JK-ACT-39', name: '使馆深居', desc: '深居简出，养精蓄锐', chapters: [5, 5],
-      eff: { attrs: { weiji: -5, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -3, tupo: 1 }, dev: 0 },
       res: '馆门三日不出。秦人的眼睛找不到焦点，渐渐散了。第四天开门，阳光刺眼得像殿上的金。' },
     { id: 'JK-ACT-40', name: '演练辞令', desc: '对烛自陈，字字磨洗', chapters: [5, 5],
-      eff: { attrs: { caixue: 4, biancai: 3, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 3, biancai: 2, tupo: -1 }, dev: 0 },
       res: '要说的话在舌头上过了百遍。到时候，一个字都不能错——错一个字，错的就不是话，是命。' },
     { id: 'JK-ACT-41', name: '收买宦者', desc: '结纳宫中耳目（财富-6）', req: { caifu: 6 }, chapters: [5, 5],
       eff: { attrs: { caifu: -6 }, zg: -4, dev: 0 },
       res: '金子进宫墙的缝隙，话从缝隙里递回来。宫里那一双眼睛，替你眯了一眯——宦者的笑比金子还假，但消息是真的。' },
     { id: 'JK-ACT-42', name: '夜查匕首', desc: '枕下之匕，夜夜亲验', chapters: [5, 5],
-      eff: { attrs: { weiji: -2, caixue: 2, wuli: 2 }, dev: 0 },
-      res: '刃口映着烛火，像一线将冻的河。你把它放回最顺手的位置——顺手到闭眼也能摸到，它现在是你的一部分。' }
+      eff: { attrs: { weiji: -1, caixue: 1, wuli: 1 }, dev: 0 },
+      res: '刃口映着烛火，像一线将冻的河。你把它放回最顺手的位置——顺手到闭眼也能摸到，它现在是你的一部分。' },
+    { id: 'JK-ACT-55', name: '殿前演礼', desc: '觐见仪程，步步预演', chapters: [5, 5],
+      eff: { attrs: { biancai: 2, caixue: 1, weiji: 1 }, dev: 0 },
+      res: '拜起、趋步、献图、奏对，你在客舍里对着屏风走了十几遍。秦国最讲究这些——仪程上错半步，殿上的话就轮不到你说了。同舍的副使看你念念有词，只当你怯场。' },
+    { id: 'JK-ACT-56', name: '分藏金帛', desc: '分藏金帛，以备不虞', chapters: [5, 5],
+      eff: { attrs: { caifu: 2, shengwang: -1 }, dev: 0 },
+      res: '馆中的金帛悄悄分藏到了几处。咸阳的耳目不是没有察觉，报上去的措辞是"燕客多疑"——多疑就多疑，西行的人，本就该先想好退路。' }
   ];
 
   /* ============ 历史百科词条 ============ */
@@ -841,6 +891,12 @@
     init: 20, name: '秦王戒心', showFrom: 3,
     words: [[70, '天威莫测'], [50, '警跸森严'], [30, '似有察觉'], [0, '不以为意']]
   };
+  // 年龄与疾病（v1.8，接入自李斯本）：AGE 定初登场年龄，各章 age 章首定龄——荆轲全线低于 55，
+  // 不触发衰减档（有意为之：本线体现“疾病仍可因低体魄发生”）；ILLNESS 开启疾病线，体魄归零走 death 病亡。
+  var AGE = { init: 30 };
+  var ILLNESS = { cost: 3, heal: 5, onsetTupo: 5, onsetWeiji: 3, drainTupo: 2, drainWeiji: 2, death: { ending: 'E8', variant: 'baobing' } };
+  // 行动卡规则（卡牌 v2）：diminish=false 关闭行动收益递减——本剧本卡池已按无递减重新平衡。
+  var ACTION_RULES = { diminish: false };
 
   // 功业标记分值（荆轲剧本：使节、装备、登殿、刺秦之举）
   var MERIT_MAP = { '燕使': 8, '函图': 10, '咸阳': 12, '刺秦': 25, '斥秦': 18 };
@@ -849,7 +905,7 @@
   var PERSIST = { junxinFrom: 2 };
 
   return {
-    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, DIFFICULTY: DIFFICULTY,
+    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, AGE: AGE, ILLNESS: ILLNESS, ACTION_RULES: ACTION_RULES, DIFFICULTY: DIFFICULTY,
     SCENARIO: SCENARIO, HIDDEN: HIDDEN, MERIT_MAP: MERIT_MAP, PERSIST: PERSIST,
     DEV_BANDS: DEV_BANDS, ENDINGS: ENDINGS, CHAPTERS: CHAPTERS,
     CORRECTIONS: CORRECTIONS, ACHIEVEMENTS: ACHIEVEMENTS, KEY_NODE_NAMES: KEY_NODE_NAMES,

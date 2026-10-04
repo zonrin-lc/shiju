@@ -84,7 +84,9 @@
         yingyang: { name: '荥阳之帐',
           zhuan: '太史公曰：田臧与吴广争兵，矫王令而诛之，献首于陈。将帅相图之日，章邯已在敖仓磨刀。田臧旋亦败死。外患未至，萧墙先破——首义之师，半亡于秦，半亡于己。' },
         daze: { name: '大泽之雨',
-          zhuan: '太史公曰：九百人屯于大泽，雨不止，吏索亡者急。或发其谋，二尉捕得陈胜吴广，立斩以徇。是岁大泽乡的雨，下透了整个秋天，无人记得。' }
+          zhuan: '太史公曰：九百人屯于大泽，雨不止，吏索亡者急。或发其谋，二尉捕得陈胜吴广，立斩以徇。是岁大泽乡的雨，下透了整个秋天，无人记得。' },
+        baobing: { name: '病殁军中',
+          zhuan: '太史公曰：涉弃陈南走，师次汝阴，腊月风雪，王忽染沉疴。军中无医，药石不进，寒热交作，数日而殁于行幄之中——去下城父，尚一日程。御者庄贾怀刃侍侧，竟无所用其刀。或曰：天之亡涉，不借人手也。然王虽殁，其所置遣侯王将相，竟亡秦矣。' }
       }
     }
   };
@@ -97,11 +99,12 @@
   var CHAPTERS = [
     /* ---------- 序章 ---------- */
     {
-      id: 'c0', title: '序章 ｜ 陇上鸿鹄', sub: '教学章 · 前 209 春',
+      id: 'c0', title: '序章 ｜ 陇上鸿鹄', sub: '教学章 · 前 209 春', age: 35,
       summaryNotes: [
         '【教学】上方十一维是你的命数。危机涨满之日，便是章邯的军旗压境之时。',
         '【教学】偏离度记你与史实的距离，只增不减：≤20 循史，21–45 微澜，46–70 改流，71 以上逆天。',
-        '【教学】选项旁带"史"字者，是史书所载陈胜的本来面目。循之则稳，违之则波澜自生。'
+        '【教学】选项旁带"史"字者，是史书所载陈胜的本来面目。循之则稳，违之则波澜自生。',
+        '【教学】岁月催人——体魄随年齿衰减。体魄低则易病：小病静养两轮自愈，大病须用「求医问药」。病至膏肓，体魄归零，便是殁时。'
       ],
       intro: [
         '始皇帝葬于骊山的那年，二世新立，坟土未干，徭役的簿子已经发到了郡县。天下像一口压了多年的锅，蒸汽顶着盖子响。',
@@ -149,7 +152,7 @@
     },
     /* ---------- 第一章 ---------- */
     {
-      id: 'c1', title: '第一章 ｜ 大泽之雨', sub: '前 209 七月 · 历史节点',
+      id: 'c1', title: '第一章 ｜ 大泽之雨', sub: '前 209 七月 · 历史节点', age: 35,
       summaryNotes: [
         '鱼腹里的丹书，丛祠边的狐鸣——人心的引信，有时候得自己亲手造。',
         '两颗将尉的人头祭旗。大泽乡的火，从这一刻起就不归你一个人管了。'
@@ -209,7 +212,7 @@
     },
     /* ---------- 第二章 ---------- */
     {
-      id: 'c2', title: '第二章 ｜ 袒右称楚', sub: '前 209 七月—八月',
+      id: 'c2', title: '第二章 ｜ 袒右称楚', sub: '前 209 七月—八月', age: 35,
       summaryNotes: [
         '从九百人到数万人，只用了不到一个月。你会发现：收人易，收心难。',
         '旗号打出去了：公子扶苏之名，项燕之望，大楚之帜——天下苦秦久矣，就等这一声。'
@@ -260,7 +263,7 @@
     },
     /* ---------- 第三章 节点N1 ---------- */
     {
-      id: 'c3', title: '第三章 ｜ 陈县称王', sub: '前 209 八月 · 历史节点',
+      id: 'c3', title: '第三章 ｜ 陈县称王', sub: '前 209 八月 · 历史节点', age: 35,
       summaryNotes: [
         '三老、豪杰都来会计事。他们说：将军功宜为王。',
         '王号这个东西，戴上是旗，摘下来是靶——戴不戴，你只有这一夜可以想。'
@@ -291,7 +294,7 @@
             '王，还是不王——'
           ],
           options: [
-            { t: '自立为王，号张楚', hist: true, res: '你受了王号，改元⟦张楚⟧。当夜陈城举火如昼，酒坛从府库一路滚到街口。诸郡县刑其长吏，杀之以应——天下真的动了。', eff: { attrs: { quanshi: 12, shengwang: 8, junxin: 5, weiji: 5 }, dev: 0, merit: '张楚', ach: 'zhangchu' }, to: '3-2' },
+            { t: '自立为王，号张楚', hist: true, res: '你受了王号，改元⟦张楚⟧。当夜陈城举火如昼，酒坛从府库一路滚到街口。诸郡县刑其长吏，杀之以应——天下真的动了。', eff: { attrs: { quanshi: 12, shengwang: 8, junxin: 5, weiji: 5, zhengji: 5 }, dev: 0, merit: '张楚', ach: 'zhangchu' }, to: '3-2' },
             { t: '三让王号，奉楚后行号令', req: { shengwang: 35 }, res: '“楚后有在，吾不敢先。”你拜了大将军印，奉楚遗胤正朔。满堂愕然之后，有人老泪纵横，三老伏地不起。让出去的是王号，收回来的是人心。', eff: { attrs: { shengwang: 8, junxin: 8, quanshi: -3, moulue: 3 }, dev: 12, flags: ['buwang'], hist: 15, ach: 'buwang' }, to: '3-2' },
             { t: '暂缓王号，先定根本', res: '“王号不急，根基先固。”劝进的人悻悻而退，靴跟踏得堂砖响。吴广却松了口气，夜里来见你，只说了一句：这一步，走得稳。', eff: { attrs: { weiji: -3, junxin: -3, moulue: 2 }, dev: 5 }, to: '3-2' }
           ] },
@@ -312,7 +315,7 @@
     },
     /* ---------- 第四章 节点N2 ---------- */
     {
-      id: 'c4', title: '第四章 ｜ 诸将四出', sub: '前 209 九月—十一月 · 历史节点',
+      id: 'c4', title: '第四章 ｜ 诸将四出', sub: '前 209 九月—十一月 · 历史节点', age: 35,
       summaryNotes: [
         '周文的大军已经进逼函谷。而你的朝堂上，朱房、胡武的"司过"之名，一天比一天响。',
         '外面的仗在赢，里面的病在长——你看不清哪一样先发作。'
@@ -371,7 +374,7 @@
     },
     /* ---------- 第五章 节点N3 ---------- */
     {
-      id: 'c5', title: '第五章 ｜ 戏亭与荥阳', sub: '前 209 十二月 · 历史节点 · 全剧本枢纽',
+      id: 'c5', title: '第五章 ｜ 戏亭与荥阳', sub: '前 209 十二月 · 历史节点 · 全剧本枢纽', age: 35,
       summaryNotes: [
         '章邯破了戏亭，下一个就是荥阳。而荥阳城里，田臧的刀，比章邯的更快。'
       ],
@@ -429,7 +432,7 @@
     },
     /* ---------- 第六章 ---------- */
     {
-      id: 'c6', title: '第六章 ｜ 腊月', sub: '前 208 腊月',
+      id: 'c6', title: '第六章 ｜ 腊月', sub: '前 208 腊月', age: 36,
       summaryNotes: [
         '史书行到此处，只剩最后一页。汝阴的雪，下城父的夜，都在这一页里。'
       ],
@@ -463,7 +466,7 @@
           ],
           options: [
             { t: '不疑，仍使驾车', hist: true, res: '庄贾的刀从背后进来时，你听见雪落在车辕上的声音。陈胜王，凡六月。然薪尽之时，火已燎原——你置遣的侯王将相，正从四面八方，替你烧完剩下的路。', eff: { attrs: {}, dev: 0, hist: 40 }, to: { ending: 'E1' } },
-            { t: '察其异，先收其刃', req: { caixue: 50 }, res: '你按住了庄贾的手。刀跌在车板上，当啷一声。他跪下去磕头，你看着他，忽然很累——原来人心，也是可以失期的。', eff: { attrs: { weiji: 10, wuli: 2, moulue: 2 }, dev: 15 },
+            { t: '察其异，先收其刃', req: { moulue: 50 }, res: '你按住了庄贾的手。刀跌在车板上，当啷一声。他跪下去磕头，你看着他，忽然很累——原来人心，也是可以失期的。', eff: { attrs: { weiji: 10, wuli: 2, moulue: 2 }, dev: 15 },
               to: [ { if: { anyflag: ['wuguang', 'buwang'], weijiMax: 84 }, to: '6-3' }, { to: { ending: 'E8' } } ] },
             { t: '弃车易服，孤身夜遁', res: '你解下王者的印绶，走进雪夜。身后庄贾举着空刀，对着空车喊了一夜。天亮时雪停了，路上只有一串往南的脚印，越走越浅。', eff: { attrs: { weiji: -10, quanshi: -10, tupo: -2 }, dev: 20 }, to: { ending: 'E3' } }
           ] },
@@ -673,174 +676,227 @@
              '你还有最后一次挣扎的机会。'],
       options: [
         { t: '尽散府库，收拢溃军', req: { caifu: 30 }, res: '府库一空，金饼直接倒进士卒的怀里。溃军复聚，营盘守住了——这一次。', eff: { attrs: { caifu: -30, weiji: -25 }, dev: 0 }, to: 'RETURN' },
-        { t: '亲赴军前，决死一呼', req: { caixue: 55 }, res: '你站上土台，把“等死，死国可乎”又喊了一遍。溃兵停住了脚——这一次。有人扔下包袱，转身回了队列。', eff: { attrs: { weiji: -15, shengwang: -5 }, dev: 0 }, to: 'RETURN' },
+        { t: '亲赴军前，决死一呼', req: { biancai: 55 }, res: '你站上土台，把“等死，死国可乎”又喊了一遍。溃兵停住了脚——这一次。有人扔下包袱，转身回了队列。', eff: { attrs: { weiji: -15, shengwang: -5 }, dev: 0 }, to: 'RETURN' },
         { t: '坐以待毙', res: '你搁下笔，听帐外的风声。风声里夹着马蹄，越来越近。', eff: { attrs: { weiji: 15 }, dev: 0 }, to: 'RETURN' }
       ] }
   };
 
-  /* ============ 主动行动（行动卡回合制；通用 6 + 章定制 6，每章池恒 12，共 48） ============
-   * 数值口径：单项 ≤±8、zg ≤±5、不写 flags/hist/merit、dev 恒 0。
+  /* ============ 主动行动（行动卡回合制；通用 8 + 章定制 8，每章池恒 16，共 64） ============
+   * 数值口径：单项 ≤±8、不写 flags/hist/merit/ach/rmflags、dev 恒 0。
+   * v2 卡牌改版（接入自李斯/荆轲本）：收益全面缩窄（非危机正收益 5→3/4→3/3→2/2→1，
+   * 危机负收益 -8→-5/-6→-4/-5→-3/-4→-3/-3→-2/-2→-1；财富支付、危机正值、属性负值等代价项不动），
+   * 通用池补 2 张体质卡（CS-ACT-49/50），各章专属补 2 张（CS-ACT-51~64）；ACTION_RULES.diminish=false。
+   * 政绩经济（张楚建置之政）：卡侧 CS-ACT-27/30/57（+1/+1/+2），事件 hist 3-1 自立为王 +5（见 CHAPTERS）。
    * chapters:[起,止]：0 阳城 / 1 大泽 / 2 行军 / 3 陈城 / 4 诸将 / 5 荥阳 / 6 腊月。 */
   var ACTIONS = [
     /* ---- 通用行动（全章可用） ---- */
     { id: 'CS-ACT-1', name: '聚义宣讲', desc: '聚众讲“苦秦”之理', chapters: [0, 6],
-      eff: { attrs: { shengwang: 4, junxin: 2, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { shengwang: 3, junxin: 1, weiji: 2, biancai: 1 }, dev: 0 },
       res: '你站在土台上讲了一个时辰。台下的眼睛，一双双都亮了。散场后，还有人蹲在原地，舍不得走。' },
     { id: 'CS-ACT-2', name: '置酒高会', desc: '置酒结客（财富-8）', req: { caifu: 8 }, chapters: [0, 6],
-      eff: { attrs: { caifu: -8, shengwang: 4, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -8, shengwang: 3, junxin: 1, biancai: 1 }, dev: 0 },
       res: '一场大宴，宾主尽欢。散场时，多了几个肯替你说话的人。酒醒之后，话比酒走得更远。' },
     { id: 'CS-ACT-3', name: '入府联络', desc: '趋府通款，以通声气（需起事）', req: { minChapter: 2 }, chapters: [0, 6],
-      eff: { attrs: { junxin: 5, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 3, weiji: 2, biancai: 1 }, dev: 0 },
       res: '你在堂下站了半个时辰，换来三句回话。乱世里，门路就是粮道。出门时，门吏看你的眼神热了一点。' },
     { id: 'CS-ACT-4', name: '闭门读兵', desc: '谢客静修，温习兵略', chapters: [0, 6],
-      eff: { attrs: { caixue: 3, weiji: -2, moulue: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: -1, moulue: 1, tupo: -1 }, dev: 0 },
       res: '门一关，阵图铺了满案。这一夜，你的兵又精了一分。烛花爆了两次，你没有抬头。' },
     { id: 'CS-ACT-5', name: '散财养士', desc: '厚币招贤（财富-8）', req: { caifu: 8 }, chapters: [0, 6],
-      eff: { attrs: { caifu: -8, weiji: -6, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -8, weiji: -4, shengwang: 2 }, dev: 0 },
       res: '千金散尽，门下多了几十张嘴，也多了几十双替你看路的眼睛。钱的响声停了，人的脚步声多了。' },
     { id: 'CS-ACT-6', name: '称病蛰伏', desc: '闭门称病，避人锋芒（需起事）', req: { minChapter: 2 }, chapters: [0, 6],
-      eff: { attrs: { weiji: -8, quanshi: -3, junxin: -2, tupo: 2 }, dev: 0 },
+      eff: { attrs: { weiji: -5, quanshi: -3, junxin: -2, tupo: 1 }, dev: 0 },
       res: '病假话说出去，麻烦少了一半。探病的人来了几拨，真心难辨。你躺在帐里，把每个人的来意都过了一遍。' },
+    /* ---- 通用行动（v2：演武养身，全章可用） ---- */
+    { id: 'CS-ACT-49', name: '演武强身', desc: '晨起演武，筋骨与艺俱进', chapters: [0, 6],
+      eff: { attrs: { wuli: 3, tupo: 1, caifu: -1 }, dev: 0 },
+      res: '你鸡鸣即起，在场院上演武三百回。汗水换了几身短打，臂上的力道一日日攒了下来——锄把换成了矛杆，使力的人还是那个人。' },
+    { id: 'CS-ACT-50', name: '导引养生', desc: '调息导引，养精神于未衰', chapters: [0, 6],
+      eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
+      res: '你闭帐调息，依图导引，吐纳之间气血渐顺。帐外的人久不见你露面，揣测便淡了——养的是精神，顺带也养了一份清静。' },
 
     /* ---- 章 0：阳城 ---- */
     { id: 'CS-ACT-7', name: '代写书信', desc: '代写书信讼状，以笔糊口', chapters: [0, 0],
-      eff: { attrs: { caifu: 4, shengwang: -2, caixue: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2, caixue: 1 }, dev: 0 },
       res: '你的状纸写得刀刀见骨。润笔不多，够买三日饭。苦主临走时鞠了一躬，比给钱的时候郑重。' },
     { id: 'CS-ACT-8', name: '帮佣换粮', desc: '多接几亩短工', chapters: [0, 0],
-      eff: { attrs: { caifu: 3, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: 2, tupo: 1 }, dev: 0 },
       res: '多锄了三亩地，粮袋里又实了一分。天黑收工，手上的茧又厚了一层。' },
     { id: 'CS-ACT-9', name: '结交戍卒', desc: '与过路戍卒攀谈（财富-2）', req: { caifu: 2 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -2, shengwang: 3, junxin: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -2, shengwang: 2, junxin: 1, biancai: 1 }, dev: 0 },
       res: '一碗水一把汗，戍卒们的话你也听明白了：天下没有一个不想骂娘的。临别时有人塞给你半张饼——那是戍卒的交情。' },
     { id: 'CS-ACT-10', name: '听人说天下', desc: '酒肆听四方消息', chapters: [0, 0],
-      eff: { attrs: { caixue: 2, moulue: 2, caifu: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 1, moulue: 1, caifu: -1 }, dev: 0 },
       res: '咸阳的、渔阳的、大泽的——天下的裂缝，在你耳朵里一点点清楚。听完你走回田里，锄头落下去，比早上重了些。' },
     { id: 'CS-ACT-11', name: '夜宿破庙', desc: '破庙一宿，省资养力（财富-2）', req: { caifu: 2 }, chapters: [0, 0],
-      eff: { attrs: { caifu: -2, weiji: -4, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -2, weiji: -3, tupo: 1 }, dev: 0 },
       res: '佛前一盏灯，身外一场雨。你在蒲团上睡到自然醒。醒来时雨停了，檐水还在滴，一声一声，很稳。' },
     { id: 'CS-ACT-12', name: '练武强身', desc: '晨起练武，以健体魄', chapters: [0, 0],
-      eff: { attrs: { caixue: 2, weiji: 2, wuli: 3, tupo: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 1, weiji: 2, wuli: 2, tupo: 1 }, dev: 0 },
       res: '拳到第三遍，汗透了。这副身板，将来是要经大事的。收势时东方泛白，你比太阳先起来。' },
+    { id: 'CS-ACT-51', name: '陇上较力', desc: '与佣伴较力角抵，筋骨之名渐起', chapters: [0, 0],
+      eff: { attrs: { wuli: 2, shengwang: 1, weiji: 1 }, dev: 0 },
+      res: '你在陇上放倒了三条壮汉。喝彩声顺着垄沟滚出去，也滚进了里正的耳朵里——乡野的勇名，一半是敬，一半是忌。' },
+    { id: 'CS-ACT-52', name: '负麦换钱', desc: '负麦帮工，气力换钱', chapters: [0, 0],
+      eff: { attrs: { tupo: 2, caifu: 1 }, dev: 0 },
+      res: '你替人扛了半月的麦袋，肩头的茧厚了一层，囊中的钱也多了几枚。佣耕的人以力换食，你以力换命——这副身板，是往后大事的本钱。' },
 
     /* ---- 章 1：大泽 ---- */
     { id: 'CS-ACT-13', name: '安抚戍卒', desc: '巡铺安抚，以结众心', chapters: [1, 1],
-      eff: { attrs: { junxin: 4, weiji: 2, biancai: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { junxin: 3, weiji: 2, biancai: 1, tupo: -1 }, dev: 0 },
       res: '你走过每个铺位。九百个人心，一点点聚到你身上。走到最后一铺，有人往你手里塞了块烤热的薯。' },
     { id: 'CS-ACT-14', name: '联络两屯', desc: '与另一屯屯长通款', chapters: [1, 1],
-      eff: { attrs: { junxin: 3, biancai: 2, weiji: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, biancai: 1, weiji: 2 }, dev: 0 },
       res: '两个屯长对了一次眼神。什么时候动手，你们心里都有了数。分开时谁也没说话——有些话，说出口就是罪证。' },
     { id: 'CS-ACT-15', name: '密置耳目', desc: '暗布眼线于队中', chapters: [1, 1],
-      eff: { attrs: { caixue: 2, weiji: 2, moulue: 2, caifu: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 1, weiji: 2, moulue: 1, caifu: -1 }, dev: 0 },
       res: '队里谁说了什么，你都知道了。眼睛这东西，早一天布早一天有用。当夜收到第一条消息，你记在心上，没写在任何地方。' },
     { id: 'CS-ACT-16', name: '巡查队伍', desc: '整肃行伍，以立规矩', chapters: [1, 1],
-      eff: { attrs: { quanshi: 2, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 1, wuli: 1 }, dev: 0 },
       res: '队伍走得齐了，将尉骂得少了，你的威信也起来了。队列从你面前过去，脚步声齐得像一个人。' },
     { id: 'CS-ACT-17', name: '夜探营门', desc: '夜观营防，默记虚实', chapters: [1, 1],
-      eff: { attrs: { caixue: 3, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: 2, moulue: 1 }, dev: 0 },
       res: '营门几重、将尉住哪、兵器在哪——你都记下了。回铺位时，你把草鞋底的泥蹭干净，像没出去过一样。' },
     { id: 'CS-ACT-18', name: '散粮结心', desc: '分粮周急（财富-3）', req: { caifu: 3 }, chapters: [1, 1],
-      eff: { attrs: { caifu: -3, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 2 }, dev: 0 },
       res: '你自己的那份分了一半出去。有人接过粮时，手是抖的。你的晚饭少了半碗，心里的底气多了半碗。' },
+    { id: 'CS-ACT-53', name: '雨中演阵', desc: '雨隙演阵，隐成部曲', chapters: [1, 1],
+      eff: { attrs: { wuli: 2, junxin: 1, weiji: 1 }, dev: 0 },
+      res: '雨小的间隙，你把两屯人拉出去排了三遍队列。戍卒们渐渐走得像一支军队了——将尉远远看了一眼，皱着眉走开了。' },
+    { id: 'CS-ACT-54', name: '冒雨探路', desc: '冒雨探视前路水势', chapters: [1, 1],
+      eff: { attrs: { tupo: 2, caixue: 1 }, dev: 0 },
+      res: '你披着蓑衣蹚出去十几里，把哪段路还能走、哪段已成了泽国都摸了回来。泥水灌了满靴，心里的地图却清楚了。' },
 
     /* ---- 章 2：行军 ---- */
     { id: 'CS-ACT-19', name: '申明军纪', desc: '申令三军，秋毫无犯', chapters: [2, 2],
-      eff: { attrs: { shengwang: 3, junxin: 3, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { shengwang: 2, junxin: 2, weiji: 2, moulue: 1 }, dev: 0 },
       res: '三条军令下去，入城的队伍再没有人乱来。箪食壶浆的人更多了。有老妪追到队尾，硬往士卒怀里塞鸡蛋。' },
     { id: 'CS-ACT-20', name: '抚降纳叛', desc: '收编来降之众', chapters: [2, 2],
-      eff: { attrs: { quanshi: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '降者感不杀之恩，愿效死力。你的军队，又厚了一层。降卒排队械甲，械完甲，眼里有了光。' },
     { id: 'CS-ACT-21', name: '筹粮于野', desc: '就食于野，以充军粮', chapters: [2, 2],
-      eff: { attrs: { caifu: 3, shengwang: -2 }, dev: 0 },
+      eff: { attrs: { caifu: 2, shengwang: -2 }, dev: 0 },
       res: '粮是筹来了，乡里的闲话也起了。你让人记了账：哪村哪户，战后要还。' },
     { id: 'CS-ACT-22', name: '操练新卒', desc: '亲训新附之卒', chapters: [2, 2],
-      eff: { attrs: { quanshi: 3, wuli: 3, tupo: -1 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, wuli: 2, tupo: -1 }, dev: 0 },
       res: '昨天还是农夫的人，今天学会了列阵。收操时队列还歪歪扭扭，但已经像一支军队了。' },
     { id: 'CS-ACT-23', name: '犒赏士卒', desc: '以私财犒军（财富-4）', req: { caifu: 4 }, chapters: [2, 2],
-      eff: { attrs: { caifu: -4, shengwang: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -4, shengwang: 2 }, dev: 0 },
       res: '酒肉到营，士气大振。士兵记得陈将军的赏。有人喝醉了抱着矛哭，说跟上你，值。' },
     { id: 'CS-ACT-24', name: '探城虚实', desc: '先遣细探，再图攻坚', chapters: [2, 2],
-      eff: { attrs: { caixue: 3, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: 2, moulue: 1 }, dev: 0 },
       res: '城里守军多少、人心向背，你都摸清了。细探回来时鞋底磨穿，你赏了他一双新的。' },
+    { id: 'CS-ACT-55', name: '阵前试锋', desc: '小阵试锋，以战练胆', chapters: [2, 2],
+      eff: { attrs: { wuli: 2, quanshi: 1, weiji: 1 }, dev: 0 },
+      res: '你挑了一队新卒，择一处坞壁小试锋芒。箭放了三轮，门就开了——兵是练出来的，胆是打出来的。' },
+    { id: 'CS-ACT-56', name: '与卒同炊', desc: '与士卒同炊共爨', chapters: [2, 2],
+      eff: { attrs: { tupo: 2, junxin: 1 }, dev: 0 },
+      res: '你蹲在灶边和士卒分同一锅羹。有人说将军不该吃这个，你把最后一口喝净：大泽乡出来的，什么没吃过。' },
 
     /* ---- 章 3：陈城 ---- */
     { id: 'CS-ACT-25', name: '开仓赈民', desc: '开仓放粮（财富-3）', req: { caifu: 3 }, chapters: [3, 3],
-      eff: { attrs: { caifu: -3, shengwang: 4, weiji: -2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, shengwang: 3, weiji: -1 }, dev: 0 },
       res: '仓开了，陈人山呼。民心这种东西，是拿粮换的，也值。领粮的队伍排到街尾，没人插队。' },
     { id: 'CS-ACT-26', name: '召见三老', desc: '礼请三老豪杰', chapters: [3, 3],
-      eff: { attrs: { junxin: 3, shengwang: 2, biancai: 2, caifu: -1 }, dev: 0 },
+      eff: { attrs: { junxin: 2, shengwang: 1, biancai: 1, caifu: -1 }, dev: 0 },
       res: '三老们从堂上下来时，腰板比进去时直了三分。他们在堂下商量了一路，声音压得很低，笑意压不住。' },
     { id: 'CS-ACT-27', name: '修筑城防', desc: '缮城固防，深根固本', chapters: [3, 3],
-      eff: { attrs: { quanshi: 3 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, zhengji: 1 }, dev: 0 },
       res: '陈城的墙高了一尺。守得住的根本，才是根本。夯土声从早响到晚，路过的人都要仰头看一眼。' },
     { id: 'CS-ACT-28', name: '裁汰老弱', desc: '汰弱留强，以精其军', chapters: [3, 3],
-      eff: { attrs: { quanshi: 3, weiji: 2, shengwang: -2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, shengwang: -2, moulue: 1 }, dev: 0 },
       res: '老弱遣归，精壮留下。军是精了，骂名也起了。遣归的人走到辕门外，回头望了一眼旗。' },
     { id: 'CS-ACT-29', name: '安插亲信', desc: '以旧部领新附', chapters: [3, 3],
-      eff: { attrs: { quanshi: 2, junxin: 2, weiji: 2, moulue: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 1, junxin: 1, weiji: 2, moulue: 1 }, dev: 0 },
       res: '大泽乡的老人各领一营。刀把子，还是握在自己人手里稳。夜里你睡得踏实了些——踏实这东西，也是花人心换的。' },
     { id: 'CS-ACT-30', name: '清查府库', desc: '核收陈之府库', chapters: [3, 3],
-      eff: { attrs: { caifu: 4 }, dev: 0 },
+      eff: { attrs: { caifu: 3, zhengji: 1 }, dev: 0 },
       res: '府库的账核清了。张楚的家底，你心里有数了。算盘珠子响到半夜，响完你心里亮堂了。' },
+    { id: 'CS-ACT-57', name: '置官定号', desc: '置官属，定号令，立张楚之制', chapters: [3, 3],
+      eff: { attrs: { zhengji: 2, quanshi: 1, weiji: 2 }, dev: 0 },
+      res: '你设官分职，颁号令于诸县：仓有守，狱有吏，赋有籍。张楚不再只是一面旗，成了一架转得动的机器——咸阳的案上，你的名字又描深了一笔。' },
+    { id: 'CS-ACT-58', name: '登陴巡夜', desc: '登城巡夜，与守卒同警', chapters: [3, 3],
+      eff: { attrs: { tupo: 2, junxin: 1 }, dev: 0 },
+      res: '你披衣登城，一更一更巡过去。守卒见王旗在城头移动，腰杆都挺直了些——寒气钻进衣领，你想起佣耕时的霜。' },
 
     /* ---- 章 4：诸将 ---- */
     { id: 'CS-ACT-31', name: '督察徇地', desc: '亲巡徇地诸军（权势≥25 诸将方听）', req: { quanshi: 25 }, chapters: [4, 4],
-      eff: { attrs: { quanshi: 3, weiji: 3, wuli: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 3, wuli: 1, tupo: -1 }, dev: 0 },
       res: '你走了一趟北线。诸将见你亲来，收敛的收敛，抖擞的抖擞。回程时，各营的军容都比你去时齐整。' },
     { id: 'CS-ACT-32', name: '犒赏归师', desc: '犒赏徇地归者（财富-4）', req: { caifu: 4 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -4, shengwang: 3, junxin: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -4, shengwang: 2, junxin: 1 }, dev: 0 },
       res: '归师的赏发下去了。下回出兵，个个争先。赏薄意厚——领赏的人记住的是后者。' },
     { id: 'CS-ACT-33', name: '调解争功', desc: '为诸将和功', chapters: [4, 4],
-      eff: { attrs: { junxin: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '两个争功的将领被你按回座位。和事佬不好当，但总得有人当。散帐时两人互相拱了拱手，劲儿还别着，火是压下去了。' },
     { id: 'CS-ACT-34', name: '联络诸侯', desc: '遣使通好（财富-3）', req: { caifu: 3 }, chapters: [4, 4],
-      eff: { attrs: { caifu: -3, junxin: 2, shengwang: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { caifu: -3, junxin: 1, shengwang: 1, biancai: 1 }, dev: 0 },
       res: '使者四出，回话都极恭敬。只是恭敬这个东西，最经不起风。你把回书一封封收好，也一封封打了折扣。' },
     { id: 'CS-ACT-35', name: '检阅新军', desc: '大阅诸营新军', chapters: [4, 4],
-      eff: { attrs: { quanshi: 3, wuli: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, wuli: 1 }, dev: 0 },
       res: '新军列阵，已经有模有样。尘土扬起来，落下去，阵形没有乱。' },
     { id: 'CS-ACT-36', name: '收拢溃卒', desc: '收编败散之卒', chapters: [4, 4],
-      eff: { attrs: { quanshi: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '败兵重新捏成了军队。能聚人，才是真本事。归队的人低着头，你让他们抬起来——败过一场，不等于输了整个人。' },
+    { id: 'CS-ACT-59', name: '马上阅阵', desc: '驰赴各营，马上阅阵', chapters: [4, 4],
+      eff: { attrs: { wuli: 2, quanshi: 1, tupo: -1 }, dev: 0 },
+      res: '你一马一鞭跑遍了三座大营。尘土灌了满喉，各营的虚实也看了个透——将校们私下说：大王眼睛是亮的。' },
+    { id: 'CS-ACT-60', name: '卸甲小憩', desc: '偷得半日闲，卸甲养神', chapters: [4, 4],
+      eff: { attrs: { tupo: 2, weiji: -1 }, dev: 0 },
+      res: '你把甲卸了，睡了这半年来第一个整觉。醒来时军报堆了半案，精神却回来了——弦绷得太紧，是会断的。' },
 
     /* ---- 章 5：荥阳 ---- */
     { id: 'CS-ACT-37', name: '亲赴军前', desc: '亲赴荥阳军中', chapters: [5, 5],
-      eff: { attrs: { quanshi: 3, weiji: 3, shengwang: 2, wuli: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 3, shengwang: 1, wuli: 1, tupo: -1 }, dev: 0 },
       res: '你出现在军前那天，全军的呼声响了三里。荥阳城头的守军也听见了，旗帜动了一阵，又静下去。' },
     { id: 'CS-ACT-38', name: '激励将士', desc: '以义励众，以固军心', chapters: [5, 5],
-      eff: { attrs: { shengwang: 3, junxin: 3, biancai: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { shengwang: 2, junxin: 2, biancai: 1, tupo: -1 }, dev: 0 },
       res: '你说：楚虽三户，亡秦必楚。将士的眼里，火又着了。回声滚过营盘，一营接一营，滚了半个时辰。' },
     { id: 'CS-ACT-39', name: '加固敖仓', desc: '缮治敖仓壁垒', chapters: [5, 5],
-      eff: { attrs: { quanshi: 3, caifu: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, caifu: 1 }, dev: 0 },
       res: '⟦敖仓⟧的粮与垒，都是命。民夫往来如蚁，新垒一日高过一日。' },
     { id: 'CS-ACT-40', name: '购募死士', desc: '重金募敢死之士（财富-5）', req: { caifu: 5 }, chapters: [5, 5],
-      eff: { attrs: { caifu: -5, quanshi: 3 }, dev: 0 },
+      eff: { attrs: { caifu: -5, quanshi: 2 }, dev: 0 },
       res: '千金之下，必有勇夫。应募的人排开一列，个个把赏金先寄回了家。' },
     { id: 'CS-ACT-41', name: '调解宿怨', desc: '为两将解仇', chapters: [5, 5],
-      eff: { attrs: { junxin: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '两只握刀的手被你按回了桌上。和事佬不好当，但总得有人当。两人碰了杯酒，酒是苦的，好歹碰了。' },
     { id: 'CS-ACT-42', name: '夜议军机', desc: '与诸将夜议军机（才学≥40 方能服众）', req: { caixue: 40 }, chapters: [5, 5],
-      eff: { attrs: { caixue: 3, moulue: 3, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 2, moulue: 2, tupo: -1 }, dev: 0 },
       res: '舆图前的烛火，烧到了四更。散帐时诸将各怀计较，但方向只有一个了。' },
+    { id: 'CS-ACT-61', name: '阵前夺旗', desc: '亲陷小阵，夺旗励众', chapters: [5, 5],
+      eff: { attrs: { wuli: 2, shengwang: 1, weiji: 1 }, dev: 0 },
+      res: '你带着亲兵咬下了秦军一处哨垒，旗拔了回来。全军看得真切：陈王的刀还快。哨垒的烟，飘到荥阳城头都看得见。' },
+    { id: 'CS-ACT-62', name: '负土筑垒', desc: '与民夫同负土，亲筑营垒', chapters: [5, 5],
+      eff: { attrs: { tupo: 2, quanshi: 1 }, dev: 0 },
+      res: '你挽起袖子和民夫一起背土上垒。土筐压弯了扁担，垒墙一日高过一日——佣耕出身的人，力气还在身上。' },
 
     /* ---- 章 6：腊月 ---- */
     { id: 'CS-ACT-43', name: '收拢残部', desc: '收拢溃散之众', chapters: [6, 6],
-      eff: { attrs: { quanshi: 3, weiji: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { quanshi: 2, weiji: 2, biancai: 1 }, dev: 0 },
       res: '溃散的人马一点点聚回来。还肯回来的，都是真心跟着你的。有人走了三天三夜，进营门时只说了句：屯长，我回来了。' },
     { id: 'CS-ACT-44', name: '安抚逃卒', desc: '抚辑逃亡，以安余众', chapters: [6, 6],
-      eff: { attrs: { junxin: 3, shengwang: 2, biancai: 2 }, dev: 0 },
+      eff: { attrs: { junxin: 2, shengwang: 1, biancai: 1 }, dev: 0 },
       res: '逃卒一个个回来领罪。你没罚，只说了句：回来了就好。营门那晚没有锁——锁了，就真没人回来了。' },
     { id: 'CS-ACT-45', name: '夜巡残营', desc: '亲巡夜哨，以肃余部', chapters: [6, 6],
-      eff: { attrs: { weiji: -3, wuli: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { weiji: -2, wuli: 1, tupo: -1 }, dev: 0 },
       res: '你查到第三座营时，偷睡的两个哨兵从此不敢合眼。后半夜你再巡一遍，哨声应答，无一遗漏。' },
     { id: 'CS-ACT-46', name: '变卖仪仗', desc: '鬻王者仪仗以充军资', chapters: [6, 6],
-      eff: { attrs: { caifu: 4, shengwang: -2 }, dev: 0 },
+      eff: { attrs: { caifu: 3, shengwang: -2 }, dev: 0 },
       res: '仪仗卖了个干净。人穷到这个地步，体面就顾不上了。换来的粮倒进锅里时，士卒们说今天的粥特别稠。' },
     { id: 'CS-ACT-47', name: '密探追兵', desc: '遣人觇章邯之踪', chapters: [6, 6],
-      eff: { attrs: { caixue: 3, weiji: 2, moulue: 2, tupo: -1 }, dev: 0 },
+      eff: { attrs: { caixue: 2, weiji: 2, moulue: 1, tupo: -1 }, dev: 0 },
       res: '追兵离你多远，你比谁都清楚——清楚到夜夜睡不着。斥候回报的数字一天一换，你在心里给它留了一格。' },
     { id: 'CS-ACT-48', name: '秣马南郊', desc: '于南郊休整残军', chapters: [6, 6],
-      eff: { attrs: { weiji: -3, tupo: 2 }, dev: 0 },
-      res: '残军饱餐休整。下一程往南，还得靠这些人。马吃饱了打响鼻，人吃饱了，眼里又有了活气。' }
+      eff: { attrs: { weiji: -2, tupo: 1 }, dev: 0 },
+      res: '残军饱餐休整。下一程往南，还得靠这些人。马吃饱了打响鼻，人吃饱了，眼里又有了活气。' },
+    { id: 'CS-ACT-63', name: '雪夜磨刃', desc: '雪夜磨刃，意态犹雄', chapters: [6, 6],
+      eff: { attrs: { wuli: 2, weiji: -1 }, dev: 0 },
+      res: '雪粒子打着帐布，你把佩刀磨了一遍又一遍。刃口映着火光，像一线不肯冻的河——刀还利，人就还没输。' },
+    { id: 'CS-ACT-64', name: '拥炉话旧', desc: '拥炉与残卒话大泽旧事', chapters: [6, 6],
+      eff: { attrs: { tupo: 2, junxin: 1 }, dev: 0 },
+      res: '你和老卒们围着火，从大泽乡的雨讲到陈城的旗。讲到好笑处，一帐人都笑了——火快熄了，笑声把寒气顶了回去。' }
   ];
 
   /* ============ 历史百科词条 ============ */
@@ -887,11 +943,17 @@
   };
   // 失宠规则称王后方生效（未立政权，何谈"失宠"）
   var PERSIST = { junxinFrom: 3 };
+  // 年龄与疾病（v1.8，接入自李斯本）：AGE 定初登场年龄，各章 age 章首定龄——陈胜全线低于 55，
+  // 不触发衰减档（有意为之：本线体现“疾病仍可因低体魄发生”）；ILLNESS 开启疾病线，体魄归零走 death 病亡。
+  var AGE = { init: 35 };
+  var ILLNESS = { cost: 3, heal: 5, onsetTupo: 5, onsetWeiji: 3, drainTupo: 2, drainWeiji: 2, death: { ending: 'E8', variant: 'baobing' } };
+  // 行动卡规则（卡牌 v2）：diminish=false 关闭行动收益递减——本剧本卡池已按无递减重新平衡。
+  var ACTION_RULES = { diminish: false };
   // 功业标记分值（陈胜剧本：首义与扩张）
   var MERIT_MAP = { '首义': 10, '据陈': 12, '张楚': 20, '戏亭': 12, '荥阳': 10 };
 
   return {
-    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, DIFFICULTY: DIFFICULTY,
+    ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, INIT: INIT, AGE: AGE, ILLNESS: ILLNESS, ACTION_RULES: ACTION_RULES, DIFFICULTY: DIFFICULTY,
     SCENARIO: SCENARIO, HIDDEN: HIDDEN, PERSIST: PERSIST, MERIT_MAP: MERIT_MAP,
     DEV_BANDS: DEV_BANDS, ENDINGS: ENDINGS, CHAPTERS: CHAPTERS,
     CORRECTIONS: CORRECTIONS, ACHIEVEMENTS: ACHIEVEMENTS, KEY_NODE_NAMES: KEY_NODE_NAMES,
