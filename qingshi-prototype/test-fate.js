@@ -35,7 +35,7 @@ function ok(cond, label, detail){ if (cond){ pass++; console.log('✔ ' + label)
   ok(!missing, '词条完整性：50 局全部 ⟦词条⟧ 在合并词条库有定义', missing);
 }
 
-/* 3. 初始属性扰动带：六维 ±10、危机 ±5、clamp 0–100 */
+/* 3. 初始属性扰动带：十一维 ±10、危机 ±5、clamp 0–100 */
 {
   let bad = '';
   outer:
@@ -47,7 +47,7 @@ function ok(cond, label, detail){ if (cond){ pass++; console.log('✔ ' + label)
       if (v < Math.max(0, b - span) || v > Math.min(100, b + span)) { bad = `seed#${i} ${k}=${v} 基=${b}`; break outer; }
     }
   }
-  ok(!bad, '扰动带：100 局六维 ±10、危机 ±5、0–100 收敛', bad);
+  ok(!bad, '扰动带：100 局十一维 ±10、危机 ±5、0–100 收敛', bad);
 }
 
 /* 4. 冲突词条以主角本为准（取主角本同样拥有该词条的命局验证） */
