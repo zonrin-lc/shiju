@@ -10,17 +10,24 @@
 })(typeof self !== 'undefined' ? self : this, function () {
 
   var ATTRS = [
-    { k: 'quanshi', n: '权势', words: [[80, '号令诸侯'], [50, '雄踞一方'], [25, '众至数万'], [0, '孤身一人']] },
-    { k: 'shengwang', n: '声望', words: [[80, '天下景从'], [50, '名动郡县'], [25, '乡党称贤'], [0, '默默无闻']] },
-    { k: 'junxin', n: '君心', words: [[70, '万众归心'], [45, '将士用命'], [20, '人心初附'], [0, '离心离德']] },
+    /* 自身 */
+    { k: 'tupo', n: '体魄', words: [[80, '龙精虎猛'], [55, '筋骨强健'], [25, '尚可劳碌'], [0, '形销体弱']] },
+    { k: 'wuli', n: '武力', words: [[80, '万夫不当'], [55, '骁勇善战'], [25, '习得武艺'], [0, '手无缚鸡']] },
+    { k: 'caixue', n: '文才', words: [[75, '军政两通'], [55, '知兵善断'], [35, '胸有丘壑'], [0, '见识平平']] },
+    { k: 'moulue', n: '谋略', words: [[80, '算无遗策'], [55, '深谋远虑'], [25, '粗通权变'], [0, '不谙机心']] },
+    { k: 'biancai', n: '辩才', words: [[80, '舌动九州'], [55, '口若悬河'], [25, '能言善对'], [0, '拙于言辞']] },
+    /* 身外 */
     { k: 'caifu', n: '财富', words: [[70, '府库充盈'], [40, '粮草渐足'], [15, '尚可裹腹'], [0, '身无长物']] },
-    { k: 'caixue', n: '才学', words: [[75, '军政两通'], [55, '知兵善断'], [35, '胸有丘壑'], [0, '见识平平']] },
+    { k: 'shengwang', n: '名声', words: [[80, '天下景从'], [50, '名动郡县'], [25, '乡党称贤'], [0, '默默无闻']] },
+    { k: 'quanshi', n: '权势', words: [[80, '号令诸侯'], [50, '雄踞一方'], [25, '众至数万'], [0, '孤身一人']] },
+    { k: 'zhengji', n: '政绩', words: [[80, '功盖当世'], [55, '政绩斐然'], [25, '小有建树'], [0, '寸功未立']] },
+    { k: 'junxin', n: '君心', words: [[70, '万众归心'], [45, '将士用命'], [20, '人心初附'], [0, '离心离德']] },
     { k: 'weiji', n: '危机', words: [[90, '命悬一线'], [70, '秦师压境'], [40, '暗流涌动'], [0, '岁月静好']], inverse: true }
   ];
 
-  var ATTR_NAMES = { quanshi: '权势', shengwang: '声望', junxin: '君心', caifu: '财富', caixue: '才学', weiji: '危机' };
+  var ATTR_NAMES = { tupo: '体魄', wuli: '武力', caixue: '文才', moulue: '谋略', biancai: '辩才', caifu: '财富', shengwang: '名声', quanshi: '权势', zhengji: '政绩', junxin: '君心', weiji: '危机' };
 
-  var INIT = { quanshi: 3, shengwang: 12, junxin: 18, caifu: 10, caixue: 35, weiji: 10 };
+  var INIT = { tupo: 40, wuli: 35, caixue: 35, moulue: 30, biancai: 40, caifu: 10, shengwang: 12, quanshi: 3, zhengji: 0, junxin: 18, weiji: 10 };
 
   var DIFFICULTY = {
     story:    { n: '剧情', wj: 0.6, corr: 0.5, coef: 0.8,  backtrack: -1, lethal: false, hideAttrs: false,

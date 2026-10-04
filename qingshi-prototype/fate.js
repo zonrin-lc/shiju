@@ -12,7 +12,7 @@
   else root.QINGSHI_FATE = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
 
-  var ATTR_KEYS = ['quanshi', 'shengwang', 'junxin', 'caifu', 'caixue', 'weiji'];
+  var ATTR_KEYS = ['tupo', 'wuli', 'caixue', 'moulue', 'biancai', 'caifu', 'shengwang', 'quanshi', 'zhengji', 'junxin', 'weiji'];
 
   function mulberry32(a) {
     return function () {

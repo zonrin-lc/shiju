@@ -67,7 +67,10 @@
     if (mode === 'attrs'){
       heads[0].textContent = '属 性 面 板';
       heads[1].style.display = ''; al.style.display = ''; meta.style.display = '';
+      var SELF_KEYS = ['tupo', 'wuli', 'caixue', 'moulue', 'biancai'];   // 自身（天赋线）
       game.d.ATTRS.forEach(function(a){
+        if (a.k === SELF_KEYS[0]) list.appendChild(el('div','attrGroup','自 身 ｜ 天赋'));
+        else if (a.k === 'caifu') list.appendChild(el('div','attrGroup','身 外 ｜ 经营'));
         var row = el('div','attrRow');
         var valText = game.diff.hideAttrs ? game.attrWord(a.k) : (game.attrs[a.k] + ' · ' + game.attrWord(a.k));
         var pct = game.attrs[a.k];
@@ -77,7 +80,7 @@
           for (var wi = 0; wi < a.words.length; wi++){ if (game.attrs[a.k] >= a.words[wi][0]){ tier = wi; break; } }
           pct = (a.words.length - tier) * (100 / a.words.length);
         }
-        row.innerHTML = '<div class="lab"><span><img class="attrIcon" src="assets/icons/icon_'+a.k+'.png" alt="">'+a.n+'</span><span class="val">'+valText+'</span></div>'+
+        row.innerHTML = '<div class="lab"><span><img class="attrIcon" src="assets/icons/icon_'+a.k+'.png" alt="" onerror="this.style.display=\'none\'">'+a.n+'</span><span class="val">'+valText+'</span></div>'+
           '<div class="attrBar'+(a.inverse?' inv':'')+'"><i style="width:'+pct+'%"></i></div>';
         list.appendChild(row);
       });
