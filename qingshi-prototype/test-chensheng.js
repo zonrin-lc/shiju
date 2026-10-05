@@ -433,7 +433,7 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
 }
 
-/* ---------- 17. 政绩经济存在性（v1.9，张楚建置之政）：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2）、事件侧 3-1 hist +5、全书零 req.zhengji ---------- */
+/* ---------- 17. 政绩经济存在性（v1.9，张楚建置之政）：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2）、事件侧 3-1 hist +5；zhengji/wuli 门槛白名单：全书 req/路由 cond 引用恰两处（3-2 req zhengji:8 / 2-3 req wuli:42） ---------- */
 {
   const zj = {};
   D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
@@ -441,10 +441,63 @@ function has(g, ach) { return g.ach.includes(ach); }
   const zjEvents = [];
   D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
   const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['3-1:5:hist']);
-  let reqZj = 0;
-  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
-  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2），事件侧 3-1 hist +5，全书零 req.zhengji'); }
-  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
+  const refs = { zhengji: [], wuli: [] };
+  const scanEv = ev => (ev.options || []).forEach(o => {
+    ['zhengji', 'wuli'].forEach(k => {
+      if (o.req && o.req[k] != null) refs[k].push(ev.id + ':req:' + o.req[k]);
+      if (Array.isArray(o.to)) o.to.forEach(t => { if (t.if && t.if[k] != null) refs[k].push(ev.id + ':route:' + t.if[k]); });
+    });
+  });
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(scanEv));
+  (D.RANDOM_EVENTS || []).forEach(scanEv);
+  const ce = D.CRISIS_EVENTS || {};
+  ['death', 'qingsuan'].forEach(k => { if (ce[k]) scanEv(ce[k]); });
+  (ce.plots || []).forEach(scanEv);
+  const zjOk = JSON.stringify(refs.zhengji.slice().sort()) === JSON.stringify(['3-2:req:8']);
+  const wlOk = JSON.stringify(refs.wuli.slice().sort()) === JSON.stringify(['2-3:req:42']);
+  if (cardsOk && eventsOk && zjOk && wlOk) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（CS-ACT-27+1/30+1/57+2），事件侧 3-1 hist +5；门槛白名单恰两处（3-2 req zhengji:8 / 2-3 req wuli:42）'); }
+  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, refs })); }
+}
+
+/* ---------- 18. v2.0.1 口径新路线 ×2：武力/政绩软门槛（不足转险招，达标直选） ---------- */
+{
+  // (a) 2-3「亲冒矢石，先登陷阵」req wuli:42：41 转险招（70%）/ 42 直选 → NEXT（章末结算页）
+  const ga = mkGame('normal', rngHigh);
+  ga.randomOn = false; ga.start(); ga.enterChapter(2); ga.eventId = '2-3';
+  ga.attrs.wuli = 41;
+  ga.beginRounds(); ga.playCard(0);
+  const aStart = ga.eventId; // '2-3'
+  const aLow = ga.getOptions().find(o => o.opt.t.indexOf('先登陷阵') >= 0);
+  ga.attrs.wuli = 42;
+  const aIdx = ga.getOptions().findIndex(o => o.opt.t.indexOf('先登陷阵') >= 0);
+  const aHigh = ga.getOptions()[aIdx];
+  const r0 = ga.choose(aIdx);
+  const rt = ga.proceed(); // to NEXT → 章末结算（二章无章末事件、偏离 0 无修正）
+  const aOk = aStart === '2-3' && aLow && !aLow.locked && aLow.risky && aLow.risky.rate === 70
+    && aHigh && !aHigh.locked && !aHigh.risky
+    && r0 && r0.changes.some(c => c.k === 'wuli' && c.delta === 2) && r0.changes.some(c => c.k === 'weiji' && c.delta === 4)
+    && rt && rt.type === 'summary' && ga.phase === 'summary' && ga.dev === 0;
+  if (aOk) { pass++; console.log('✔ 新路线 2-3「先登陷阵」：武力 41 转险招（70%）/ 42 直选 → NEXT（章末结算页）'); }
+  else { fail++; console.log('✘ 2-3 先登陷阵异常：' + JSON.stringify({ low: aLow && !!aLow.risky, rt: rt && rt.type, phase: ga.phase, dev: ga.dev })); }
+
+  // (b) 3-2「置官屯田，以实绩安众」req zhengji:8：7 转险招（70%）/ 8 直选 → NEXT，诸将离心 zg -4
+  const gb = mkGame('normal', rngHigh);
+  gb.randomOn = false; gb.start(); gb.enterChapter(3); gb.eventId = '3-2';
+  gb.attrs.zhengji = 7;
+  gb.beginRounds(); gb.playCard(0);
+  const bStart = gb.eventId; // '3-2'
+  const bLow = gb.getOptions().find(o => o.opt.t.indexOf('置官屯田') >= 0);
+  gb.attrs.zhengji = 8;
+  const bIdx = gb.getOptions().findIndex(o => o.opt.t.indexOf('置官屯田') >= 0);
+  const bHigh = gb.getOptions()[bIdx];
+  const zg0 = gb.zg;
+  gb.choose(bIdx);
+  const rtb = gb.proceed();
+  const bOk = bStart === '3-2' && bLow && !bLow.locked && bLow.risky && bLow.risky.rate === 70
+    && bHigh && !bHigh.locked && !bHigh.risky
+    && gb.zg === zg0 - 4 && rtb && rtb.type === 'summary' && gb.phase === 'summary';
+  if (bOk) { pass++; console.log('✔ 新路线 3-2「置官屯田」：政绩 7 转险招（70%）/ 8 直选 → NEXT，诸将离心 ' + zg0 + '→' + gb.zg); }
+  else { fail++; console.log('✘ 3-2 置官屯田异常：' + JSON.stringify({ low: bLow && !!bLow.risky, zg: gb.zg, rt: rtb && rtb.type, phase: gb.phase })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);

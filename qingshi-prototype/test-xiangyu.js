@@ -402,7 +402,7 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
 }
 
-/* ---------- 16. 政绩经济存在性（v1.9，zhengji=治军与分封之政）：卡侧恰 3 源（XY-ACT-53+1/59+2/61+1）、事件侧 1-3/2-1 hist 各 +5、全书零 req.zhengji ---------- */
+/* ---------- 16. 政绩经济存在性（v1.9，zhengji=治军与分封之政）：卡侧恰 3 源（XY-ACT-53+1/59+2/61+1）、事件侧 1-3/2-1 hist 各 +5；zhengji 门槛白名单（缺口路线）：全书 req/路由 cond 引用恰一处（4-3 req:10） ---------- */
 {
   const zj = {};
   D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
@@ -410,10 +410,99 @@ function has(g, ach) { return g.ach.includes(ach); }
   const zjEvents = [];
   D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
   const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['1-3:5:hist', '2-1:5:hist']);
-  let reqZj = 0;
-  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
-  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（XY-ACT-53+1/59+2/61+1），事件侧 1-3/2-1 hist 各+5，全书零 req.zhengji'); }
-  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
+  const zjRefs = [];
+  const scanEv = ev => (ev.options || []).forEach(o => {
+    if (o.req && o.req.zhengji != null) zjRefs.push(ev.id + ':req:' + o.req.zhengji);
+    if (Array.isArray(o.to)) o.to.forEach(t => { if (t.if && t.if.zhengji != null) zjRefs.push(ev.id + ':route:' + t.if.zhengji); });
+  });
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(scanEv));
+  (D.RANDOM_EVENTS || []).forEach(scanEv);
+  const ce = D.CRISIS_EVENTS || {};
+  ['death', 'qingsuan'].forEach(k => { if (ce[k]) scanEv(ce[k]); });
+  (ce.plots || []).forEach(scanEv);
+  const refsOk = JSON.stringify(zjRefs.slice().sort()) === JSON.stringify(['4-3:req:10']);
+  if (cardsOk && eventsOk && refsOk) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（XY-ACT-53+1/59+2/61+1），事件侧 1-3/2-1 hist 各+5；zhengji 门槛白名单恰一处（4-3 req:10）'); }
+  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, zjRefs })); }
+}
+
+/* ---------- 17. 缺口路线 ×3：政绩/辩才/君心门槛与 E6 条件变体「江东归心」（属性门槛为软门槛：不足转险招，达标直选） ---------- */
+{
+  // (a) 4-3「以战功名实封赏诸将」req 政绩10：不足转险招，达标直选 → NEXT（章末结算页），zg-8 缓诸侯离心
+  const ga = mkGame('normal', rngHigh);
+  ga.randomOn = false; ga.start(); ga.enterChapter(4); ga.eventId = '4-3';
+  ga.attrs.zhengji = 9;
+  ga.beginRounds(); ga.playCard(0);
+  const aLow = ga.getOptions().find(o => o.opt.t.indexOf('以战功名实') >= 0);
+  ga.attrs.zhengji = 10;
+  const aIdx = ga.getOptions().findIndex(o => o.opt.t.indexOf('以战功名实') >= 0);
+  const aHigh = ga.getOptions()[aIdx];
+  const z0 = ga.zg;
+  ga.choose(aIdx);
+  const rtA = ga.proceed(); // to NEXT → 章末结算（四章无章末事件、偏离 5 无修正）
+  const aOk = aLow && !aLow.locked && aLow.risky && aLow.risky.rate === 70
+    && aHigh && !aHigh.locked && !aHigh.risky && ga.zg === z0 - 8 && rtA && rtA.type === 'summary' && ga.phase === 'summary';
+  if (aOk) { pass++; console.log('✔ 缺口路线 4-3「以战功名实封赏诸将」：政绩 9 转险招（70%）/ 10 直选，诸侯离心 ' + z0 + '→' + ga.zg + ' → NEXT（章末结算页）'); }
+  else { fail++; console.log('✘ 4-3 封赏异常：' + JSON.stringify({ low: aLow && !!aLow.risky, zg: ga.zg, rt: rtA && rtA.type, phase: ga.phase })); }
+
+  // (b) 3-3「当众折辩，诘其守关之欲」req 辩才55：不足转险招，达标直选 → NEXT（章末结算页）
+  const gb = mkGame('normal', rngHigh);
+  gb.randomOn = false; gb.start(); gb.enterChapter(3); gb.eventId = '3-3';
+  gb.attrs.biancai = 54;
+  gb.beginRounds(); gb.playCard(0);
+  const bLow = gb.getOptions().find(o => o.opt.t.indexOf('当众折辩') >= 0);
+  gb.attrs.biancai = 55;
+  const bIdx = gb.getOptions().findIndex(o => o.opt.t.indexOf('当众折辩') >= 0);
+  const bHigh = gb.getOptions()[bIdx];
+  gb.choose(bIdx);
+  const rtB = gb.proceed(); // to NEXT → 章末结算（三章无章末事件、偏离 12 无修正）
+  const bOk = bLow && !bLow.locked && bLow.risky && bLow.risky.rate === 70
+    && bHigh && !bHigh.locked && !bHigh.risky && rtB && rtB.type === 'summary' && gb.phase === 'summary';
+  if (bOk) { pass++; console.log('✔ 缺口路线 3-3「当众折辩」：辩才 54 转险招（70%）/ 55 直选 → NEXT（章末结算页）'); }
+  else { fail++; console.log('✘ 3-3 折辩异常：' + JSON.stringify({ low: bLow && !!bLow.risky, rt: rtB && rtB.type, phase: gb.phase })); }
+
+  // (c) 6-4「怀人望而渡，江东父老犹附」req 君心45 + E6 条件变体：路由与「渡江再砺」同档（先结算 eff 再判路由），达标 → E6/renwang「江东归心」；路由不满足 → E8 本体
+  const gc = mkGame('normal', rngHigh);
+  gc.randomOn = false; gc.start(); gc.enterChapter(6); gc.eventId = '6-4';
+  gc.attrs.junxin = 44;
+  gc.beginRounds(); gc.playCard(0);
+  const cLow = gc.getOptions().find(o => o.opt.t.indexOf('怀人望而渡') >= 0);
+  gc.attrs.junxin = 45;
+  const cIdx = gc.getOptions().findIndex(o => o.opt.t.indexOf('怀人望而渡') >= 0);
+  const cHigh = gc.getOptions()[cIdx];
+  gc.attrs.shengwang = 50; gc.dev = 46; // 路由第一档：shengwang 50 + notflag shiyidi + devMin 46
+  gc.choose(cIdx); gc.proceed();
+  const gc2 = mkGame('normal', rngHigh);
+  gc2.randomOn = false; gc2.start(); gc2.enterChapter(6); gc2.eventId = '6-4';
+  gc2.attrs.junxin = 45; gc2.attrs.shengwang = 30; gc2.dev = 46; // 路由两档皆不满足 → E8
+  gc2.beginRounds(); gc2.playCard(0);
+  const cIdx2 = gc2.getOptions().findIndex(o => o.opt.t.indexOf('怀人望而渡') >= 0);
+  gc2.choose(cIdx2); gc2.proceed();
+  const cOk = cLow && !cLow.locked && cLow.risky && cLow.risky.rate === 70
+    && cHigh && !cHigh.locked && !cHigh.risky
+    && gc.ending && gc.ending.id === 'E6' && gc.ending.variant === 'renwang' && gc.ending.name === '江东归心'
+    && gc2.ending && gc2.ending.id === 'E8' && !gc2.ending.variant;
+  if (cOk) { pass++; console.log('✔ 缺口路线 6-4「怀人望而渡」：君心 44 转险招 / 45 直选；路由达标 → E6/renwang「江东归心」，名声 30 → E8 本体'); }
+  else { fail++; console.log('✘ 6-4 人望渡江异常：' + JSON.stringify({ low: cLow && !!cLow.risky, v50: gc.ending && (gc.ending.id + '/' + gc.ending.variant), v30: gc2.ending && (gc2.ending.id + '/' + gc2.ending.variant) })); }
+
+  // (d) 辩才/君心门槛白名单：全书 options req/路由 cond 引用，biancai 恰 ['3-3:req:55']、junxin 恰 ['6-4:req:45']（N1 异变 junxinMax 在 mutations，不在此口径）
+  const bcRefs = [], jxRefs = [];
+  const scan2 = ev => (ev.options || []).forEach(o => {
+    if (o.req) {
+      if (o.req.biancai != null) bcRefs.push(ev.id + ':req:' + o.req.biancai);
+      if (o.req.junxin != null) jxRefs.push(ev.id + ':req:' + o.req.junxin);
+    }
+    if (Array.isArray(o.to)) o.to.forEach(t => { if (t.if) {
+      if (t.if.biancai != null) bcRefs.push(ev.id + ':route:' + t.if.biancai);
+      if (t.if.junxin != null) jxRefs.push(ev.id + ':route:' + t.if.junxin);
+    } });
+  });
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(scan2));
+  (D.RANDOM_EVENTS || []).forEach(scan2);
+  const ce2 = D.CRISIS_EVENTS || {};
+  ['death', 'qingsuan'].forEach(k => { if (ce2[k]) scan2(ce2[k]); });
+  (ce2.plots || []).forEach(scan2);
+  if (JSON.stringify(bcRefs) === JSON.stringify(['3-3:req:55']) && JSON.stringify(jxRefs) === JSON.stringify(['6-4:req:45'])) { pass++; console.log('✔ 辩才/君心门槛白名单：biancai 恰 3-3:req:55，junxin 恰 6-4:req:45'); }
+  else { fail++; console.log('✘ 辩才/君心门槛白名单异常：' + JSON.stringify({ bcRefs, jxRefs })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);

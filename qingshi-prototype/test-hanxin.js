@@ -461,7 +461,8 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
 }
 
-/* ---------- 17. 政绩经济存在性（v1.9）：卡侧恰 3 源（HX-ACT-25+1/39+2/59+2，治军安邦、治齐之政）、事件侧 3-2/4-2 hist 各 +5、全书零 req.zhengji ---------- */
+/* ---------- 17. 政绩/辩才经济存在性（v1.9 卡源/事件源 + v2.0.1 门槛白名单）：卡侧恰 3 源（HX-ACT-25+1/39+2/59+2）、事件侧 3-2/4-2 hist 各 +5；
+ * zhengji 门槛白名单：全书 req/路由 cond 引用恰两处（6-3 req:10 / 5-3 路由 if:15）；biancai 门槛白名单：恰一处（C-DEATH req:35） ---------- */
 {
   const zj = {};
   D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
@@ -470,10 +471,73 @@ function has(g, ach) { return g.ach.includes(ach); }
   const zjEvents = [];
   D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
   const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['3-2:5:hist', '4-2:5:hist']);
-  let reqZj = 0;
-  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
-  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（HX-ACT-25+1/39+2/59+2），事件侧 3-2/4-2 hist 各+5，全书零 req.zhengji'); }
-  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
+  const refs = { zhengji: [], biancai: [] };
+  const scanEv = ev => (ev.options || []).forEach(o => {
+    ['zhengji', 'biancai'].forEach(k => {
+      if (o.req && o.req[k] != null) refs[k].push(ev.id + ':req:' + o.req[k]);
+      if (Array.isArray(o.to)) o.to.forEach(t => { if (t.if && t.if[k] != null) refs[k].push(ev.id + ':route:' + t.if[k]); });
+    });
+  });
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(scanEv));
+  (D.RANDOM_EVENTS || []).forEach(scanEv);
+  const ce = D.CRISIS_EVENTS || {};
+  ['death', 'qingsuan'].forEach(k => { if (ce[k]) scanEv(ce[k]); });
+  (ce.plots || []).forEach(scanEv);
+  const zjRefsOk = JSON.stringify(refs.zhengji.slice().sort()) === JSON.stringify(['5-3:route:15', '6-3:req:10']);
+  const bcRefsOk = JSON.stringify(refs.biancai.slice().sort()) === JSON.stringify(['C-DEATH:req:35']);
+  if (cardsOk && eventsOk && zjRefsOk && bcRefsOk) { pass++; console.log('✔ 政绩/辩才经济存在性：卡侧恰 3 源（HX-ACT-25+1/39+2/59+2），事件侧 3-2/4-2 hist 各+5；zhengji 门槛恰两处（6-3 req:10 / 5-3 路由 if:15），biancai 门槛恰一处（C-DEATH req:35）'); }
+  else { fail++; console.log('✘ 政绩/辩才经济异常：' + JSON.stringify({ zj, zjEvents, refs })); }
+}
+
+/* ---------- 18. v2.0.1 缺口路线 ×3：政绩（6-3 自辩 / E5 变体）与辩才（C-DEATH 廷对）门槛（属性门槛为软门槛：不足转险招，达标直选） ---------- */
+{
+  // (a) 6-3「历数战功，廷前自辩」req 政绩10：不足转险招，达标直选 → 6-4（以功折狱：疑心≥70 亦不入云梦之缚）
+  const ga = driveTo('6-3', {});
+  ga.attrs.zhengji = 9;
+  const aLow = ga.getOptions().find(o => o.opt.t.indexOf('廷前自辩') >= 0);
+  ga.attrs.zhengji = 10; ga.zg = 80; // 疑心 80（史实往谒 zgMax:69 已必缚）——验证自辩线独立于 zg 判定
+  const aIdx = ga.getOptions().findIndex(o => o.opt.t.indexOf('廷前自辩') >= 0);
+  const aHigh = ga.getOptions()[aIdx];
+  ga.choose(aIdx); ga.proceed();
+  const aOk = aLow && !aLow.locked && aLow.risky && aLow.risky.rate === 70
+    && aHigh && !aHigh.locked && !aHigh.risky && ga.eventId === '6-4';
+  if (aOk) { pass++; console.log('✔ 新路线 6-3「历数战功，廷前自辩」：政绩 9 转险招（70%）/ 10 直选 → 6-4（疑心 80 亦不入云梦之缚）'); }
+  else { fail++; console.log('✘ 6-3 自辩异常：' + JSON.stringify({ low: aLow && !!aLow.risky, ev: ga.eventId })); }
+
+  // (b) C-DEATH「廷对自明，历陈不反之状」req 辩才35：不足转险招，达标直选 → RETURN（危机-15，回到被插入事件）
+  const gb = mkGame('normal', rngHigh);
+  gb.randomOn = false; gb.start();
+  gb.attrs.weiji = 95; gb.attrs.biancai = 34;
+  gb.enterChapter(1); gb.beginEvents();
+  gb.playCard(0); // 关键卡 → C-DEATH
+  const bStart = gb.eventId; // 'C-DEATH'
+  const bLow = gb.getOptions().find(o => o.opt.t.indexOf('廷对自明') >= 0);
+  gb.attrs.biancai = 35;
+  const bIdx = gb.getOptions().findIndex(o => o.opt.t.indexOf('廷对自明') >= 0);
+  const bHigh = gb.getOptions()[bIdx];
+  gb.choose(bIdx); gb.proceed();
+  const bOk = bStart === 'C-DEATH' && bLow && !bLow.locked && bLow.risky && bLow.risky.rate === 70
+    && bHigh && !bHigh.locked && !bHigh.risky && gb.attrs.weiji === 80 && gb.eventId === '1-1';
+  if (bOk) { pass++; console.log('✔ 新路线 C-DEATH「廷对自明」：辩才 34 转险招（70%）/ 35 直选，危机 95→80，RETURN 回 1-1'); }
+  else { fail++; console.log('✘ C-DEATH 廷对异常：' + JSON.stringify({ low: bLow && !!bLow.risky, weiji: gb.attrs.weiji, ev: gb.eventId })); }
+
+  // (c) 5-3「从汉，但请解兵权归老」E5 条件变体：zhengji≥15 → E5/huaiyin「淮阴之治」；<15 → E5 本体（引擎先结算 eff 再判路由，该选项 eff 无政绩）
+  const gc = mkGame('normal', rngHigh);
+  gc.randomOn = false; gc.start(); gc.enterChapter(5); gc.eventId = '5-3';
+  gc.attrs.zhengji = 15; gc.attrs.shengwang = 60;
+  gc.beginRounds(); gc.playCard(0);
+  const cIdx = gc.getOptions().findIndex(o => o.opt.t.indexOf('请解兵权归老') >= 0);
+  gc.choose(cIdx); gc.proceed();
+  const gc2 = mkGame('normal', rngHigh);
+  gc2.randomOn = false; gc2.start(); gc2.enterChapter(5); gc2.eventId = '5-3';
+  gc2.attrs.zhengji = 14; gc2.attrs.shengwang = 60;
+  gc2.beginRounds(); gc2.playCard(0);
+  const cIdx2 = gc2.getOptions().findIndex(o => o.opt.t.indexOf('请解兵权归老') >= 0);
+  gc2.choose(cIdx2); gc2.proceed();
+  const cOk = gc.ending && gc.ending.id === 'E5' && gc.ending.variant === 'huaiyin' && gc.ending.name === '淮阴之治'
+    && gc2.ending && gc2.ending.id === 'E5' && !gc2.ending.variant;
+  if (cOk) { pass++; console.log('✔ 5-3 解兵权条件变体：政绩 15 → E5/huaiyin「淮阴之治」，14 → E5 本体'); }
+  else { fail++; console.log('✘ 解兵权变体异常：' + JSON.stringify({ v15: gc.ending && gc.ending.variant, v14: gc2.ending && gc2.ending.variant })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);
