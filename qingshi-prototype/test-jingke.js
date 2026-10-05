@@ -460,7 +460,7 @@ function has(g, ach) { return g.ach.includes(ach); }
   else { fail++; console.log('✘ 无递减异常：' + JSON.stringify({ useCounts, deltas, dim: oUsed.diminishing })); }
 }
 
-/* ---------- 17. 政绩经济存在性（v1.9）：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2）、事件侧 2-2/3-1 hist 各 +5、全书零 req.zhengji ---------- */
+/* ---------- 17. 政绩经济存在性（v1.9）：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2）、事件侧 2-2/3-1 hist 各 +5；zhengji 门槛白名单（v2.0.1）：全书 req/路由 cond 引用恰两处（5-1 req:10 / 5-2 路由 if:15） ---------- */
 {
   const zj = {};
   D.ACTIONS.forEach(a => { if (a.eff && a.eff.attrs && a.eff.attrs.zhengji) zj[a.id] = a.eff.attrs.zhengji; });
@@ -468,10 +468,104 @@ function has(g, ach) { return g.ach.includes(ach); }
   const zjEvents = [];
   D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.eff && o.eff.attrs && o.eff.attrs.zhengji) zjEvents.push(ev.id + ':' + o.eff.attrs.zhengji + (o.hist ? ':hist' : '')); })));
   const eventsOk = JSON.stringify(zjEvents.slice().sort()) === JSON.stringify(['2-2:5:hist', '3-1:5:hist']);
-  let reqZj = 0;
-  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(ev => ev.options.forEach(o => { if (o.req && o.req.zhengji != null) reqZj++; })));
-  if (cardsOk && eventsOk && reqZj === 0) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2），事件侧 2-2/3-1 hist 各+5，全书零 req.zhengji'); }
-  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, reqZj })); }
+  const zjRefs = [];
+  const scanEv = ev => (ev.options || []).forEach(o => {
+    if (o.req && o.req.zhengji != null) zjRefs.push(ev.id + ':req:' + o.req.zhengji);
+    if (Array.isArray(o.to)) o.to.forEach(t => { if (t.if && t.if.zhengji != null) zjRefs.push(ev.id + ':route:' + t.if.zhengji); });
+  });
+  D.CHAPTERS.forEach(ch => (ch.events || []).forEach(scanEv));
+  (D.RANDOM_EVENTS || []).forEach(scanEv);
+  const ce = D.CRISIS_EVENTS || {};
+  ['death', 'qingsuan'].forEach(k => { if (ce[k]) scanEv(ce[k]); });
+  (ce.plots || []).forEach(scanEv);
+  const refsOk = JSON.stringify(zjRefs.slice().sort()) === JSON.stringify(['5-1:req:10', '5-2:route:15']);
+  if (cardsOk && eventsOk && refsOk) { pass++; console.log('✔ 政绩经济存在性：卡侧恰 3 源（JK-ACT-22+1/49+2/51+2），事件侧 2-2/3-1 hist 各+5；zhengji 门槛白名单恰两处（5-1 req:10 / 5-2 路由 if:15）'); }
+  else { fail++; console.log('✘ 政绩经济异常：' + JSON.stringify({ zj, zjEvents, zjRefs })); }
+}
+
+/* ---------- 18. v2.0.1 新路线 ×4：权势/政绩/文才门槛与 E3 条件变体「能吏归燕」（属性门槛为软门槛：不足转险招，达标直选） ---------- */
+{
+  // (a) 4-1b「稳住阵脚，等太子援兵」req 权势12：不足转险招，达标可选 → 4-2
+  const ga = mkGame('normal', rngHigh);
+  ga.randomOn = false; ga.start();
+  ga.flags.qindie = true; // startAlt：持秦谍旗 → 4-1b 易水劫案起点
+  ga.enterChapter(4);
+  ga.beginEvents(); ga.playCard(0);
+  const aStart = ga.eventId; // '4-1b'
+  ga.attrs.quanshi = 11;
+  const aLow = ga.getOptions().find(o => o.opt.t.indexOf('稳住阵脚') >= 0);
+  ga.attrs.quanshi = 12;
+  const aIdx = ga.getOptions().findIndex(o => o.opt.t.indexOf('稳住阵脚') >= 0);
+  const aHigh = ga.getOptions()[aIdx];
+  ga.choose(aIdx); ga.proceed();
+  const aOk = aStart === '4-1b' && aLow && !aLow.locked && aLow.risky && aLow.risky.rate === 70
+    && aHigh && !aHigh.locked && !aHigh.risky && ga.eventId === '4-2' && ga.dev >= 3;
+  if (aOk) { pass++; console.log('✔ 新路线 4-1b「稳住阵脚」：权势 11 转险招（70%）/ 12 直选 → 4-2'); }
+  else { fail++; console.log('✘ 4-1b 新选项异常：' + JSON.stringify({ low: aLow && !!aLow.risky, ev: ga.eventId })); }
+
+  // (b) 5-1「修书燕廷，走门人引荐」req 权势15：达标可选 → mengjia flag、→ 5-2
+  const gb = mkGame('normal', rngHigh);
+  gb.randomOn = false; gb.start(); gb.enterChapter(5); gb.beginEvents(); gb.playCard(0);
+  const bStart = gb.eventId; // '5-1'
+  gb.attrs.quanshi = 14;
+  const bLow = gb.getOptions().find(o => o.opt.t.indexOf('门人引荐') >= 0);
+  gb.attrs.quanshi = 15;
+  const bIdx = gb.getOptions().findIndex(o => o.opt.t.indexOf('门人引荐') >= 0);
+  const bHigh = gb.getOptions()[bIdx];
+  gb.choose(bIdx); gb.proceed();
+  const bOk = bStart === '5-1' && bLow && !bLow.locked && bLow.risky && bLow.risky.rate === 70
+    && bHigh && !bHigh.locked && !bHigh.risky && gb.flags.mengjia && gb.eventId === '5-2';
+  if (bOk) { pass++; console.log('✔ 新路线 5-1「门人引荐」：权势 14 转险招 / 15 直选，置【mengjia】→ 5-2'); }
+  else { fail++; console.log('✘ 5-1 门人引荐异常：' + JSON.stringify({ low: bLow && !!bLow.risky, flag: !!gb.flags.mengjia, ev: gb.eventId })); }
+
+  // (c) 5-1「以使节实绩自通」req 政绩10：达标可选 → mengjia flag、→ 5-2
+  const gc = mkGame('normal', rngHigh);
+  gc.randomOn = false; gc.start(); gc.enterChapter(5); gc.beginEvents(); gc.playCard(0);
+  const cStart = gc.eventId; // '5-1'
+  gc.attrs.zhengji = 9;
+  const cLow = gc.getOptions().find(o => o.opt.t.indexOf('实绩自通') >= 0);
+  gc.attrs.zhengji = 10;
+  const cIdx = gc.getOptions().findIndex(o => o.opt.t.indexOf('实绩自通') >= 0);
+  const cHigh = gc.getOptions()[cIdx];
+  gc.choose(cIdx); gc.proceed();
+  const cOk = cStart === '5-1' && cLow && !cLow.locked && cLow.risky && cLow.risky.rate === 70
+    && cHigh && !cHigh.locked && !cHigh.risky && gc.flags.mengjia && gc.eventId === '5-2';
+  if (cOk) { pass++; console.log('✔ 新路线 5-1「实绩自通」：政绩 9 转险招 / 10 直选，置【mengjia】→ 5-2'); }
+  else { fail++; console.log('✘ 5-1 实绩自通异常：' + JSON.stringify({ low: cLow && !!cLow.risky, flag: !!gc.flags.mengjia, ev: gc.eventId })); }
+
+  // (d) 4-2「修书报燕，以文寄意」req 文才45：达标可选 → NEXT（章末结算页）
+  const gd = mkGame('normal', rngHigh);
+  gd.randomOn = false; gd.start(); gd.enterChapter(4); gd.eventId = '4-2';
+  gd.attrs.caixue = 44;
+  gd.beginRounds(); gd.playCard(0);
+  const dLow = gd.getOptions().find(o => o.opt.t.indexOf('修书报燕') >= 0);
+  gd.attrs.caixue = 45;
+  const dIdx = gd.getOptions().findIndex(o => o.opt.t.indexOf('修书报燕') >= 0);
+  const dHigh = gd.getOptions()[dIdx];
+  gd.choose(dIdx);
+  const rt = gd.proceed(); // to NEXT → 章末结算（四章无章末事件、偏离 0 无修正）
+  const dOk = dLow && !dLow.locked && dLow.risky && dLow.risky.rate === 70
+    && dHigh && !dHigh.locked && !dHigh.risky && rt && rt.type === 'summary' && gd.phase === 'summary';
+  if (dOk) { pass++; console.log('✔ 新路线 4-2「修书报燕」：文才 44 转险招 / 45 直选 → NEXT（章末结算页）'); }
+  else { fail++; console.log('✘ 4-2 修书报燕异常：' + JSON.stringify({ low: dLow && !!dLow.risky, rt: rt && rt.type, phase: gd.phase })); }
+
+  // (e) 5-2「伏阙称臣」E3 条件变体：zhengji≥15 → E3/nengli「能吏归燕」；<15 → E3 本体（引擎先结算 eff 再判路由，伏阙 eff 无政绩）
+  const ge = mkGame('normal', rngHigh);
+  ge.randomOn = false; ge.start(); ge.enterChapter(5); ge.eventId = '5-2';
+  ge.attrs.zhengji = 15;
+  ge.beginRounds(); ge.playCard(0);
+  const eIdx = ge.getOptions().findIndex(o => o.opt.t.indexOf('伏阙称臣') >= 0);
+  ge.choose(eIdx); ge.proceed();
+  const ge2 = mkGame('normal', rngHigh);
+  ge2.randomOn = false; ge2.start(); ge2.enterChapter(5); ge2.eventId = '5-2';
+  ge2.attrs.zhengji = 14;
+  ge2.beginRounds(); ge2.playCard(0);
+  const eIdx2 = ge2.getOptions().findIndex(o => o.opt.t.indexOf('伏阙称臣') >= 0);
+  ge2.choose(eIdx2); ge2.proceed();
+  const eOk = ge.ending && ge.ending.id === 'E3' && ge.ending.variant === 'nengli' && ge.ending.name === '能吏归燕'
+    && ge2.ending && ge2.ending.id === 'E3' && !ge2.ending.variant;
+  if (eOk) { pass++; console.log('✔ 5-2 伏阙条件变体：政绩 15 → E3/nengli「能吏归燕」，14 → E3 本体'); }
+  else { fail++; console.log('✘ 伏阙变体异常：' + JSON.stringify({ v15: ge.ending && ge.ending.variant, v14: ge2.ending && ge2.ending.variant })); }
 }
 
 console.log(`\n结果：${pass} 通过，${fail} 失败`);
